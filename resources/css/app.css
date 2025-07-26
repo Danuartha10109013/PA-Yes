@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Custom styles from original HTML */
+.dropdown-menu {
+    display: none;
+}
+
+.dropdown.open .dropdown-menu {
+    display: block;
+}
+
+.dragging {
+    opacity: 0.5;
+}
+
+.dropzone {
+    min-height: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.dropzone.drag-over {
+    background-color: #e0e7ff;
+    /* Tailwind indigo-100 */
+    border: 2px dashed #6366f1;
+    /* Tailwind indigo-500 */
+}
+
+.cards-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+    max-height: calc(28rem - 2rem - 0.75rem - 2rem);
+}
+
+.flex-col.max-h-\[28rem\] {
+    max-height: 28rem;
+}
+
+.bg-yellow-50 .bg-white.rounded-md,
+.bg-blue-50 .bg-white.rounded-md,
+.bg-purple-50 .bg-white.rounded-md,
+.bg-red-50 .bg-white.rounded-md {
+    border: 1px solid currentColor;
+    border-color: var(--column-border-color, theme(colors.gray.200));
+}
+
+.bg-yellow-50 {
+    --column-border-color: theme(colors.yellow.200);
+}
+
+.bg-blue-50 {
+    --column-border-color: theme(colors.blue.200);
+}
+
+.bg-purple-50 {
+    --column-border-color: theme(colors.purple.200);
+}
+
+.bg-red-50 {
+    --column-border-color: theme(colors.red.200);
+}
+
+
+body {
+    background: linear-gradient(90deg, #e5ecff 0%, #b6bfdb 100%);
+    background-size: cover;
+
+
+
+    /* atau pakai kode hex: background-color: #dbeafe; */
+}
+
+.sidebar-gradient {
+    background: linear-gradient(to right, #e5ecff, #d3dfff);
+    background-size: cover;
+}

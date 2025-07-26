@@ -1,0 +1,37 @@
+[
+    {
+        "name": "Dashboard",
+        "slug": "dashboard",
+        "url": "/dashboard",
+        "route": "dashboard",
+        "icon": "fa-solid fa-house"
+    },
+    {
+        "name": "List Produk",
+        "slug": "list-produk",
+        "url": "/products",
+        "route": "products.index",
+        "icon": "fa-solid fa-box"
+    },
+    {
+        "name": "List Sektor",
+        "slug": "list-sektor",
+        "url": "/sectors",
+        "route": "sectors.index",
+        "icon": "fa-solid fa-building"
+    },
+    {
+        "name": "List Kontak",
+        "slug": "list-kontak",
+        "url": "/contacts",
+        "route": "contacts.index",
+        "icon": "fa-solid fa-address-book"
+    },
+    {
+        "name": "Manage Lead",
+        "slug": "manage-lead",
+        "url": "/leads",
+        "route": "leads.index",
+        "icon": "fa-solid fa-file"
+    }
+]

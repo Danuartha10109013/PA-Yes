@@ -1,0 +1,176 @@
+/* .overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    transition: opacity 300ms ease;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.overlay.closed {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.drawer {
+    position: fixed;
+    background: white;
+    transition: transform 300ms ease;
+
+    z-index: 1001;
+}
+
+
+.right {
+    top: 0;
+    right: 0;
+    height: 100%;
+    transform: translateX(100%);
+}
+
+.right.open {
+    transform: translateX(0);
+}
+
+
+.left {
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+}
+
+.left.open {
+    transform: translateX(0);
+}
+
+
+.top {
+    top: 0;
+    left: 0;
+    width: 100%;
+    transform: translateY(-100%);
+}
+
+.top.open {
+    transform: translateY(0);
+}
+
+
+.bottom {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    transform: translateY(100%);
+}
+
+.bottom.open {
+    transform: translateY(0);
+} */
+
+
+/* .overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    transition: opacity 300ms ease;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1100;
+} */
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1100;
+    background-color: rgba(0, 0, 0, 0.7);
+    transition: opacity 300ms ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.overlay.closed {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.drawer {
+    position: fixed;
+    background: white;
+    transition: transform 300ms ease;
+    z-index: 1101;
+    /* di atas overlay */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    /* agar ada bayangan drawer */
+}
+
+/* Posisi drawer dari kanan */
+.right {
+    top: 0;
+    right: 0;
+    height: 100%;
+    transform: translateX(100%);
+}
+
+.right.open {
+    transform: translateX(0);
+}
+
+/* Posisi drawer dari kiri */
+.left {
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+}
+
+.left.open {
+    transform: translateX(0);
+}
+
+/* Posisi drawer dari atas */
+.top {
+    top: 0;
+    left: 0;
+    width: 100%;
+    transform: translateY(-100%);
+}
+
+.top.open {
+    transform: translateY(0);
+}
+
+/* Posisi drawer dari bawah */
+.bottom {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    transform: translateY(100%);
+}
+
+.bottom.open {
+    transform: translateY(0);
+}
+
+.drawer-with-top-shadow {
+    box-shadow: 0 -8px 12px rgba(0, 0, 0, 0.15);
+    /* shadow atas */
+    transition: box-shadow 0.3s ease;
+    /* smooth transition shadow */
+}

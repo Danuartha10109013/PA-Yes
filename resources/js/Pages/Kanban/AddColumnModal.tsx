@@ -1,0 +1,219 @@
+import React, { useState } from 'react';
+import { router } from '@inertiajs/react';
+import Swal from 'sweetalert2';
+
+interface AddColumnModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+}
+
+const AddColumnModal: React.FC<AddColumnModalProps> = ({ isOpen, onClose, onSuccess }) => {
+    const [formData, setFormData] = useState({
+        name: '',
+        bg_color: 'bg-gray-100',
+        border_color: 'border-gray-300',
+        title_color: 'text-gray-600',
+        dot_border_color: 'border-gray-400',
+        dot_bg_color: 'bg-transparent',
+        dot_text_color: 'text-gray-400',
+        add_lead_color: 'text-gray-700'
+    });
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!formData.name.trim()) {
+            Swal.fire('Error!', 'Nama kolom harus diisi', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        router.post('/columns', formData, {
+            onSuccess: () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Kolom berhasil ditambahkan!',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                setFormData({
+                    name: '',
+                    bg_color: 'bg-gray-100',
+                    border_color: 'border-gray-300',
+                    title_color: 'text-gray-600',
+                    dot_border_color: 'border-gray-400',
+                    dot_bg_color: 'bg-transparent',
+                    dot_text_color: 'text-gray-400',
+                    add_lead_color: 'text-gray-700'
+                });
+                onSuccess();
+                onClose();
+            },
+            onError: (errors) => {
+                Swal.fire('Error!', Object.values(errors).join(', '), 'error');
+            },
+            onFinish: () => {
+                setIsSubmitting(false);
+            }
+        });
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-gray-800">Tambah Kolom Baru</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Nama Kolom */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Nama Kolom *
+                        </label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Contoh: PROSPECTING, CONTACTING, etc."
+                            required
+                        />
+                    </div>
+
+                    {/* Background Color */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Background Color
+                        </label>
+                        <select
+                            name="bg_color"
+                            value={formData.bg_color}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="bg-gray-100">Gray Light</option>
+                            <option value="bg-blue-100">Blue Light</option>
+                            <option value="bg-green-100">Green Light</option>
+                            <option value="bg-yellow-100">Yellow Light</option>
+                            <option value="bg-red-100">Red Light</option>
+                            <option value="bg-purple-100">Purple Light</option>
+                            <option value="bg-pink-100">Pink Light</option>
+                            <option value="bg-indigo-100">Indigo Light</option>
+                        </select>
+                    </div>
+
+                    {/* Border Color */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Border Color
+                        </label>
+                        <select
+                            name="border_color"
+                            value={formData.border_color}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="border-gray-300">Gray</option>
+                            <option value="border-blue-300">Blue</option>
+                            <option value="border-green-300">Green</option>
+                            <option value="border-yellow-300">Yellow</option>
+                            <option value="border-red-300">Red</option>
+                            <option value="border-purple-300">Purple</option>
+                            <option value="border-pink-300">Pink</option>
+                            <option value="border-indigo-300">Indigo</option>
+                        </select>
+                    </div>
+
+                    {/* Title Color */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Title Color
+                        </label>
+                        <select
+                            name="title_color"
+                            value={formData.title_color}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="text-gray-600">Gray</option>
+                            <option value="text-blue-600">Blue</option>
+                            <option value="text-green-600">Green</option>
+                            <option value="text-yellow-600">Yellow</option>
+                            <option value="text-red-600">Red</option>
+                            <option value="text-purple-600">Purple</option>
+                            <option value="text-pink-600">Pink</option>
+                            <option value="text-indigo-600">Indigo</option>
+                        </select>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Preview
+                        </label>
+                        <div 
+                            className={`${formData.bg_color} ${formData.border_color} border-2 rounded-md p-3`}
+                        >
+                            <div className={`${formData.title_color} font-semibold text-sm`}>
+                                {formData.name || 'Nama Kolom'}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                                0 leads
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                            disabled={isSubmitting}
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? (
+                                <span className="flex items-center justify-center">
+                                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                                    Menyimpan...
+                                </span>
+                            ) : (
+                                'Tambah Kolom'
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default AddColumnModal; 

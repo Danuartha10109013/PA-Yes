@@ -1,0 +1,51 @@
+/* resources/css/modal.css */
+
+/* Overlay dasar */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+/* Saat modal aktif */
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Isi modal dasar */
+.modal-content {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    max-width: 90%;
+    width: 500px;
+    position: relative;
+
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Saat modal aktif, isi modal muncul */
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+
+.modal {
+  max-height: 80vh; /* Atur tinggi maksimum modal */
+  overflow-y: auto; /* Tambahkan scroll jika konten melebihi tinggi maksimum */
+  width: 90%; /* Atur lebar modal */
+  margin: auto; /* Pusatkan modal */
+
+}
