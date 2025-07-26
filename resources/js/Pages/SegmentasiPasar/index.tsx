@@ -9,8 +9,8 @@ interface SegmentasiPasar {
     sector_id: string;
     sector_name: string;
     jumlah_item: number;
-    total_penjualan: string;
-    total_transaksi: string;
+    total_penjualan: number;
+    total_transaksi: number;
     kriteria_jumlah_item: string;
     kriteria_total_penjualan: string;
     kriteria_total_transaksi: string;
@@ -48,7 +48,8 @@ const getStatusColorClass = (status: string) => {
 const SegmentasiPasarTableRow: React.FC<{ segmentasiPasar: SegmentasiPasar }> = ({ segmentasiPasar }) => {
     const statusColorClass = getStatusColorClass(segmentasiPasar.status);
 
-    const parseToNumber = (val: string | undefined | null) => {
+    const parseToNumber = (val: number | string | undefined | null) => {
+        if (typeof val === 'number') return val;
         const num = parseFloat(val ?? '0');
         return isNaN(num) ? 0 : num;
     };
@@ -221,7 +222,8 @@ const SegmentasiPasarList: React.FC<Props> = () => {
         return null;
     };
 
-    const parseToNumber = (val: string | undefined | null) => {
+    const parseToNumber = (val: number | string | undefined | null) => {
+        if (typeof val === 'number') return val;
         const num = parseFloat(val ?? '0');
         return isNaN(num) ? 0 : num;
     };
@@ -387,7 +389,7 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                                 </div>
                                 <div className="bg-purple-50 rounded-lg p-4">
                                     <p className="text-sm font-medium text-purple-700">Total Transaksi</p>
-                                    <p className="text-2xl font-bold text-purple-800">{(averages.avg_total_transaksi ?? 0).toLocaleString('id-ID')}</p>
+                                    <p className="text-2xl font-bold text-purple-800">{Math.round(averages.avg_total_transaksi ?? 0)}</p>
                                 </div>
                             </div>
                         </div>

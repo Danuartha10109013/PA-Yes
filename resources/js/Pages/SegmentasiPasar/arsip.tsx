@@ -9,8 +9,8 @@ interface SegmentasiPasar {
     sector_id: string;
     sector_name: string;
     jumlah_item: number;
-    total_penjualan: string;
-    total_transaksi: string;
+    total_penjualan: number;
+    total_transaksi: number;
     kriteria_jumlah_item: string;
     kriteria_total_penjualan: string;
     kriteria_total_transaksi: string;
@@ -47,10 +47,10 @@ const SegmentasiPasarTableRow: React.FC<SegmentasiPasarTableRowProps> = ({ segme
                 <p className="text-sm font-semibold">{segmentasiPasar.jumlah_item}</p>
             </td>
             <td className="py-3 px-4">
-                <p className="text-sm font-semibold">Rp{parseFloat(segmentasiPasar.total_penjualan).toLocaleString('id-ID')}</p>
+                <p className="text-sm font-semibold">Rp{segmentasiPasar.total_penjualan.toLocaleString('id-ID')}</p>
             </td>
             <td className="py-3 px-4">
-                <p className="text-sm font-semibold">{parseFloat(segmentasiPasar.total_transaksi).toLocaleString('id-ID')}</p>
+                <p className="text-sm font-semibold">{segmentasiPasar.total_transaksi.toLocaleString('id-ID')}</p>
             </td>
             <td className="py-3 px-4">
                 <p className="text-sm font-semibold">{segmentasiPasar.kriteria_jumlah_item}</p>
@@ -88,6 +88,8 @@ const SegmentasiPasarList: React.FC = () => {
         avg_total_penjualan: number;
         avg_total_transaksi: number;
     } | null>(null);
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const itemsPerPage = 10;
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -157,30 +159,62 @@ const SegmentasiPasarList: React.FC = () => {
     const nextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
     const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
 
+    // Auto-refresh data setiap 30 detik
     useEffect(() => {
-        const fetchSegmentasiPasar = async () => {
-            try {
-                const response = await fetch('/segmentasi?show=arsip');
+        const interval = setInterval(() => {
+            refreshData();
+        }, 30000); // 30 detik
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+        return () => clearInterval(interval);
+    }, []);
 
-                const { data } = await response.json();
-                setSegmentasiPasar(data);
-            } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
-                } else {
-                    setError('An unknown error occurred while fetching segmentasi pasar data');
-                }
-            } finally {
-                setLoading(false);
+    // Listen untuk perubahan di halaman lain (Manage Leads, Kanban, dll)
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'segmentasi_needs_refresh' && e.newValue === 'true') {
+                // Refresh data ketika ada perubahan di halaman lain
+                refreshData();
+                // Reset flag
+                localStorage.removeItem('segmentasi_needs_refresh');
             }
         };
 
-        fetchSegmentasiPasar();
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                // Refresh data ketika user kembali ke tab ini
+                refreshData();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
+
+    const fetchSegmentasiPasar = async () => {
+        try {
+            const response = await fetch('/segmentasi?show=arsip');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const { data } = await response.json();
+            setSegmentasiPasar(data);
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('An unknown error occurred while fetching segmentasi pasar data');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchAverages = async () => {
         try {
@@ -197,7 +231,23 @@ const SegmentasiPasarList: React.FC = () => {
         }
     };
 
-    fetchAverages();
+    const refreshData = async () => {
+        setIsRefreshing(true);
+        try {
+            await fetchSegmentasiPasar();
+            await fetchAverages();
+            setLastUpdate(new Date());
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSegmentasiPasar();
+        fetchAverages();
+    }, []);
 
     // Prepare data for the line chart
     const chartData = segmentasiPasar
@@ -251,15 +301,39 @@ const SegmentasiPasarList: React.FC = () => {
             <main className="flex-1 p-6">
                 <div className="w-full max-w-7xl mx-auto">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-[#344767] font-semibold text-2xl">
-                            Daftar Segmentasi Pasar
-                        </h2>
-                        <ReportControls
-                            searchQuery={searchQuery}
-                            onSearchChange={handleSearchChange}
-                            onPrintPdf={handlePrintPdf}
-                            onPrintExcel={handlePrintExcel}
-                        />
+                        <div className="flex flex-col">
+                            <h2 className="text-[#344767] font-semibold text-2xl">
+                                Daftar Segmentasi Pasar
+                            </h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500">
+                                    Terakhir diperbarui: {lastUpdate.toLocaleTimeString('id-ID')}
+                                </span>
+                                {isRefreshing && (
+                                    <span className="text-xs text-blue-500 flex items-center gap-1">
+                                        <i className="fas fa-spinner fa-spin"></i>
+                                        Memperbarui...
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {/* Manual Refresh Button */}
+                            <button
+                                onClick={refreshData}
+                                disabled={isRefreshing}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            >
+                                <i className={`fas ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
+                                {isRefreshing ? 'Memperbarui...' : 'Refresh'}
+                            </button>
+                            <ReportControls
+                                searchQuery={searchQuery}
+                                onSearchChange={handleSearchChange}
+                                onPrintPdf={handlePrintPdf}
+                                onPrintExcel={handlePrintExcel}
+                            />
+                        </div>
                     </div>
 
                     <div className="bg-white rounded-xl shadow-md overflow-hidden mt-6">
@@ -321,7 +395,7 @@ const SegmentasiPasarList: React.FC = () => {
                             <ul className="list-disc list-inside">
                                 <li><span className="font-medium">Jumlah Item:</span> {averages.avg_jumlah_item}</li>
                                 <li><span className="font-medium">Total Penjualan:</span> Rp{averages.avg_total_penjualan.toLocaleString('id-ID')}</li>
-                                <li><span className="font-medium">Total Transaksi:</span> {averages.avg_total_transaksi.toLocaleString('id-ID')}</li>
+                                <li><span className="font-medium">Total Transaksi:</span> {Math.round(averages.avg_total_transaksi)}</li>
                             </ul>
                         </div>
                     )} */}

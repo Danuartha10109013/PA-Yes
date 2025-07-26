@@ -1213,6 +1213,7 @@ import AddLeadModal from './addlead';
 import DeleteLeadModal from './deletelead';
 import BoardHeader from './boardheader';
 import AddColumnModal from './AddColumnModal';
+import EditColumnModal from './EditColumnModal';
 import Swal from 'sweetalert2';
 
 // Helper function untuk safe JSON parsing
@@ -1260,6 +1261,10 @@ const BoardView: React.FC = () => {
     
     // State untuk AddColumnModal
     const [isAddColumnModalOpen, setIsAddColumnModalOpen] = useState(false);
+    
+    // State untuk EditColumnModal
+    const [isEditColumnModalOpen, setIsEditColumnModalOpen] = useState(false);
+    const [columnToEdit, setColumnToEdit] = useState<ColumnData | null>(null);
     
     // State untuk menentukan view yang aktif
     const { url } = usePage();
@@ -1397,40 +1402,19 @@ const BoardView: React.FC = () => {
 
     // Column action handlers
     const handleEditColumn = (column: ColumnData) => {
-        Swal.fire({
-            title: 'Edit Column',
-            input: 'text',
-            inputValue: column.title,
-            showCancelButton: true,
-            confirmButtonText: 'Save',
-            cancelButtonText: 'Cancel',
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'Column name cannot be empty!';
-                }
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.put(`/columns/${column.id}`, {
-                    name: result.value,
-                    bg_color: column.bgColor,
-                    border_color: column.borderColor,
-                    title_color: column.titleColor,
-                    dot_border_color: column.dotBorderColor,
-                    dot_bg_color: column.dotBgColor,
-                    dot_text_color: column.dotTextColor,
-                    add_lead_color: column.addLeadColor,
-                }, {
-                    onSuccess: () => {
-                        Swal.fire('Success!', 'Column updated successfully.', 'success');
-                        router.reload({ only: ['kanbanData'] });
-                    },
-                    onError: (errors) => {
-                        Swal.fire('Error!', Object.values(errors).join(', '), 'error');
-                    }
-                });
-            }
-        });
+        setColumnToEdit(column);
+        setIsEditColumnModalOpen(true);
+    };
+
+    const handleCloseEditColumnModal = () => {
+        setIsEditColumnModalOpen(false);
+        setColumnToEdit(null);
+    };
+
+    const handleEditColumnSuccess = () => {
+        router.reload({ only: ['kanbanData'] });
+        // Trigger refresh untuk Segmentasi Pasar
+        localStorage.setItem('segmentasi_needs_refresh', 'true');
     };
 
     const handleDuplicateColumn = (column: ColumnData) => {
@@ -1599,6 +1583,13 @@ const BoardView: React.FC = () => {
                     isOpen={isAddColumnModalOpen}
                     onClose={handleCloseAddColumnModal}
                     onSuccess={handleAddColumnSuccess}
+                />
+
+                <EditColumnModal
+                    isOpen={isEditColumnModalOpen}
+                    onClose={handleCloseEditColumnModal}
+                    onSuccess={handleEditColumnSuccess}
+                    column={columnToEdit}
                 />
             </div>
         </>

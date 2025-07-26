@@ -4,52 +4,80 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Carbon\Carbon;
-// use Database\Seeders\Str;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str; // <-- Add this line
-// use Carbon\Carbon;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-// use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
      */
-    // public function run(): void
-    // {
-    //     // User::factory(10)->create();
-
-    //     User::factory()->create([
-    //         'name' => 'Test User',
-    //         'email' => 'test@example.com',
-    //     ]);
-    // }
     public function run(): void
     {
-
         // Define "current month" and "previous month" for consistent seeding.
-        // As per previous discussions, we'll use fixed dates for "this month" (June 2025)
-        // and "previous month" (May 2025) to ensure consistent seeded data regardless of
-        // when the seeder is run.
+        // Using fixed dates for "this month" (June 2025) and "previous month" (May 2025)
         $currentMonth = Carbon::parse('2025-06-01'); // Start of June 2025
         $previousMonth = Carbon::parse('2025-05-01'); // Start of May 2025
 
-        // Optional: Disable foreign key checks for seeding to avoid issues with order.
-        // Uncomment the line below if you encounter foreign key constraint errors during seeding.
-        // For MySQL: DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-
         $this->command->info('Starting database seeding...');
 
-        // --- 1. Seed 'columns' table ---
+        // Clear existing data first
+        $this->clearExistingData();
+
+        // --- 1. Seed 'columns' table with styling ---
         $columnData = [
-            ['name' => 'PROSPECTING'],
-            ['name' => 'CONTACTING'],
-            ['name' => 'NEGOTIATION'],
-            ['name' => 'DEALING'],
-            ['name' => 'JUNK'],
+            [
+                'name' => 'PROSPECTING',
+                'bg_color' => 'bg-blue-100',
+                'border_color' => 'border-blue-300',
+                'title_color' => 'text-blue-600',
+                'dot_border_color' => 'border-blue-400',
+                'dot_bg_color' => 'bg-transparent',
+                'dot_text_color' => 'text-blue-400',
+                'add_lead_color' => 'text-blue-700'
+            ],
+            [
+                'name' => 'CONTACTING',
+                'bg_color' => 'bg-yellow-100',
+                'border_color' => 'border-yellow-300',
+                'title_color' => 'text-yellow-600',
+                'dot_border_color' => 'border-yellow-400',
+                'dot_bg_color' => 'bg-transparent',
+                'dot_text_color' => 'text-yellow-400',
+                'add_lead_color' => 'text-yellow-700'
+            ],
+            [
+                'name' => 'NEGOTIATION',
+                'bg_color' => 'bg-purple-100',
+                'border_color' => 'border-purple-300',
+                'title_color' => 'text-purple-600',
+                'dot_border_color' => 'border-purple-400',
+                'dot_bg_color' => 'bg-transparent',
+                'dot_text_color' => 'text-purple-400',
+                'add_lead_color' => 'text-purple-700'
+            ],
+            [
+                'name' => 'DEALING',
+                'bg_color' => 'bg-green-100',
+                'border_color' => 'border-green-300',
+                'title_color' => 'text-green-600',
+                'dot_border_color' => 'border-green-400',
+                'dot_bg_color' => 'bg-transparent',
+                'dot_text_color' => 'text-green-400',
+                'add_lead_color' => 'text-green-700'
+            ],
+            [
+                'name' => 'JUNK',
+                'bg_color' => 'bg-red-100',
+                'border_color' => 'border-red-300',
+                'title_color' => 'text-red-600',
+                'dot_border_color' => 'border-red-400',
+                'dot_bg_color' => 'bg-transparent',
+                'dot_text_color' => 'text-red-400',
+                'add_lead_color' => 'text-red-700'
+            ],
         ];
 
         $columnIds = []; // To store UUIDs for later use
@@ -59,6 +87,13 @@ class DatabaseSeeder extends Seeder
             DB::table('columns')->insert([
                 'id' => $uuid,
                 'name' => $data['name'],
+                'bg_color' => $data['bg_color'],
+                'border_color' => $data['border_color'],
+                'title_color' => $data['title_color'],
+                'dot_border_color' => $data['dot_border_color'],
+                'dot_bg_color' => $data['dot_bg_color'],
+                'dot_text_color' => $data['dot_text_color'],
+                'add_lead_color' => $data['add_lead_color'],
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
@@ -66,28 +101,55 @@ class DatabaseSeeder extends Seeder
         }
         $this->command->info('Columns seeded successfully!');
 
+        // --- 2. Seed 'sectors' table ---
+        $sectorData = [
+            ['name' => 'Information Technology', 'bg_color' => '#E0F2F7', 'text_color' => '#2196F3'],
+            ['name' => 'Finance', 'bg_color' => '#E8F5E9', 'text_color' => '#4CAF50'],
+            ['name' => 'Healthcare', 'bg_color' => '#FFEBEE', 'text_color' => '#F44336'],
+            ['name' => 'Retail', 'bg_color' => '#FFFDE7', 'text_color' => '#FFC107'],
+            ['name' => 'Manufacturing', 'bg_color' => '#E3F2FD', 'text_color' => '#03A9F4'],
+            ['name' => 'Education', 'bg_color' => '#F3E5F5', 'text_color' => '#9C27B0'],
+            ['name' => 'Real Estate', 'bg_color' => '#FCE4EC', 'text_color' => '#E91E63'],
+            ['name' => 'Transportation', 'bg_color' => '#E0F7FA', 'text_color' => '#00BCD4'],
+        ];
 
-        // --- 2. Seed 'products' table ---
+        $sectorIds = [];
+
+        foreach ($sectorData as $data) {
+            $uuid = (string) Str::uuid();
+            DB::table('sectors')->insert([
+                'id' => $uuid,
+                'name' => $data['name'],
+                'bg_color' => $data['bg_color'],
+                'text_color' => $data['text_color'],
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+            $sectorIds[$data['name']] = $uuid;
+        }
+        $this->command->info('Sectors seeded successfully!');
+
+        // --- 3. Seed 'products' table ---
         $productData = [
             [
                 'name' => 'Premium Software License',
                 'slug' => 'premium-software-license',
                 'price' => 500.00,
-                'description' => 'Annual license for our premium software suite.',
+                'description' => 'Annual license for our premium software suite with full support.',
                 'image' => null,
             ],
             [
                 'name' => 'Consulting Hours Package',
                 'slug' => 'consulting-hours-package',
                 'price' => 150.00,
-                'description' => 'Block of 10 consulting hours with our experts.',
+                'description' => 'Block of 10 consulting hours with our certified experts.',
                 'image' => null,
             ],
             [
                 'name' => 'Basic Support Plan',
                 'slug' => 'basic-support-plan',
                 'price' => 75.00,
-                'description' => 'Monthly basic support plan.',
+                'description' => 'Monthly basic support plan with email and chat support.',
                 'image' => null,
             ],
             [
@@ -101,7 +163,21 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Enterprise CRM Solution',
                 'slug' => 'enterprise-crm-solution',
                 'price' => 15000.00,
-                'description' => 'Comprehensive CRM solution for large enterprises.',
+                'description' => 'Comprehensive CRM solution for large enterprises with custom integrations.',
+                'image' => null,
+            ],
+            [
+                'name' => 'Cloud Migration Service',
+                'slug' => 'cloud-migration-service',
+                'price' => 3000.00,
+                'description' => 'Complete cloud migration service including planning and execution.',
+                'image' => null,
+            ],
+            [
+                'name' => 'Data Analytics Platform',
+                'slug' => 'data-analytics-platform',
+                'price' => 8000.00,
+                'description' => 'Advanced data analytics platform with real-time reporting.',
                 'image' => null,
             ],
         ];
@@ -124,34 +200,6 @@ class DatabaseSeeder extends Seeder
         }
         $this->command->info('Products seeded successfully!');
 
-
-        // --- 3. Seed 'sectors' table ---
-        $sectorData = [
-            ['name' => 'Information Technology', 'bg_color' => '#E0F2F7', 'text_color' => '#2196F3'],
-            ['name' => 'Finance', 'bg_color' => '#E8F5E9', 'text_color' => '#4CAF50'],
-            ['name' => 'Healthcare', 'bg_color' => '#FFEBEE', 'text_color' => '#F44336'],
-            ['name' => 'Retail', 'bg_color' => '#FFFDE7', 'text_color' => '#FFC107'],
-            ['name' => 'Manufacturing', 'bg_color' => '#E3F2FD', 'text_color' => '#03A9F4'],
-            ['name' => 'Education', 'bg_color' => '#F3E5F5', 'text_color' => '#9C27B0'],
-        ];
-
-        $sectorIds = [];
-
-        foreach ($sectorData as $data) {
-            $uuid = (string) Str::uuid();
-            DB::table('sectors')->insert([
-                'id' => $uuid,
-                'name' => $data['name'],
-                'bg_color' => $data['bg_color'],
-                'text_color' => $data['text_color'],
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
-            ]);
-            $sectorIds[$data['name']] = $uuid;
-        }
-        $this->command->info('Sectors seeded successfully!');
-
-
         // --- 4. Seed 'contacts' table (depends on 'sectors') ---
         $contactData = [
             [
@@ -161,6 +209,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '081234567890',
                 'sector_name' => 'Information Technology',
                 'address' => '123 Tech Lane, Silicon Valley, CA',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/johndoe', 'twitter' => '@johndoe']),
             ],
             [
                 'name' => 'Jane Smith',
@@ -169,6 +218,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '089876543210',
                 'sector_name' => 'Finance',
                 'address' => '456 Wall Street, New York, NY',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/janesmith']),
             ],
             [
                 'name' => 'Peter Jones',
@@ -177,6 +227,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '087654321098',
                 'sector_name' => 'Healthcare',
                 'address' => '789 Health Ave, Medical City, TX',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/peterjones']),
             ],
             [
                 'name' => 'Sarah Connor',
@@ -185,6 +236,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '082109876543',
                 'sector_name' => 'Retail',
                 'address' => '101 Shopping Mall, City Center, WA',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/sarahconnor', 'instagram' => '@sarahconnor']),
             ],
             [
                 'name' => 'David Lee',
@@ -193,6 +245,34 @@ class DatabaseSeeder extends Seeder
                 'phone' => '085678901234',
                 'sector_name' => 'Education',
                 'address' => '202 University Blvd, Knowledge Town, MA',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/davidlee']),
+            ],
+            [
+                'name' => 'Maria Garcia',
+                'company_name' => 'Real Estate Plus',
+                'email' => 'maria.garcia@realestateplus.com',
+                'phone' => '083456789012',
+                'sector_name' => 'Real Estate',
+                'address' => '303 Property Ave, Real Estate City, FL',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/mariagarcia', 'facebook' => 'facebook.com/mariagarcia']),
+            ],
+            [
+                'name' => 'Alex Chen',
+                'company_name' => 'Logistics Solutions',
+                'email' => 'alex.chen@logistics.com',
+                'phone' => '084567890123',
+                'sector_name' => 'Transportation',
+                'address' => '404 Transport St, Logistics Hub, CA',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/alexchen']),
+            ],
+            [
+                'name' => 'Lisa Wong',
+                'company_name' => 'Manufacturing Pro',
+                'email' => 'lisa.wong@manufacturingpro.com',
+                'phone' => '086789012345',
+                'sector_name' => 'Manufacturing',
+                'address' => '505 Factory Blvd, Industrial Zone, TX',
+                'social_media' => json_encode(['linkedin' => 'linkedin.com/in/lisawong']),
             ],
         ];
 
@@ -213,13 +293,13 @@ class DatabaseSeeder extends Seeder
                 'phone' => $data['phone'],
                 'sector_id' => $sectorIds[$data['sector_name']],
                 'address' => $data['address'],
+                'social_media' => $data['social_media'],
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
             $contactIds[$data['name']] = $uuid;
         }
         $this->command->info('Contacts seeded successfully!');
-
 
         // --- 5. Seed 'transactions' table (depends on 'columns', 'products', 'contacts') ---
 
@@ -236,7 +316,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Premium Software License',
                     'contact_name' => 'John Doe',
                     'qty' => 1,
-                    'deadline_days_ahead' => 10, // Deadline within June 2025
+                    'deadline_days_ahead' => 10,
                     'notes' => 'New lead identified, initial email sent for Premium Software License.',
                 ],
                 [
@@ -244,7 +324,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Consulting Hours Package',
                     'contact_name' => 'Jane Smith',
                     'qty' => 3,
-                    'deadline_days_ahead' => 18, // Deadline within June 2025
+                    'deadline_days_ahead' => 18,
                     'notes' => 'Follow-up call scheduled. Client interested in a 3-hour consulting package.',
                 ],
                 [
@@ -252,7 +332,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Custom Software Development',
                     'contact_name' => 'Peter Jones',
                     'qty' => 1,
-                    'deadline_days_ahead' => 25, // Deadline within June 2025
+                    'deadline_days_ahead' => 25,
                     'notes' => 'Proposal submitted for custom software. Negotiation on scope and price in progress.',
                 ],
                 [
@@ -260,7 +340,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Basic Support Plan',
                     'contact_name' => 'Sarah Connor',
                     'qty' => 1,
-                    'deadline_days_ahead' => 5, // Deal closed early in June
+                    'deadline_days_ahead' => 5,
                     'notes' => 'Deal closed for basic support plan. Invoice sent.',
                 ],
                 [
@@ -268,7 +348,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Enterprise CRM Solution',
                     'contact_name' => 'David Lee',
                     'qty' => 1,
-                    'deadline_days_ahead' => 28, // New high-value lead
+                    'deadline_days_ahead' => 28,
                     'notes' => 'Discovered a potential need for CRM in education sector. Initial outreach.',
                 ],
                 [
@@ -278,6 +358,30 @@ class DatabaseSeeder extends Seeder
                     'qty' => 2,
                     'deadline_days_ahead' => 12,
                     'notes' => 'Followed up on previous interest for multiple licenses.',
+                ],
+                [
+                    'column_name' => 'NEGOTIATION',
+                    'product_name' => 'Cloud Migration Service',
+                    'contact_name' => 'Maria Garcia',
+                    'qty' => 1,
+                    'deadline_days_ahead' => 20,
+                    'notes' => 'Cloud migration proposal sent. Client reviewing technical specifications.',
+                ],
+                [
+                    'column_name' => 'PROSPECTING',
+                    'product_name' => 'Data Analytics Platform',
+                    'contact_name' => 'Alex Chen',
+                    'qty' => 1,
+                    'deadline_days_ahead' => 30,
+                    'notes' => 'Initial contact regarding data analytics needs. Scheduled discovery call.',
+                ],
+                [
+                    'column_name' => 'CONTACTING',
+                    'product_name' => 'Enterprise CRM Solution',
+                    'contact_name' => 'Lisa Wong',
+                    'qty' => 1,
+                    'deadline_days_ahead' => 15,
+                    'notes' => 'Follow-up meeting scheduled. Client interested in CRM for manufacturing processes.',
                 ],
             ]
         );
@@ -295,7 +399,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Premium Software License',
                     'contact_name' => 'John Doe',
                     'qty' => 2,
-                    'deadline_days_ahead' => 20, // Deal closed in May
+                    'deadline_days_ahead' => 20,
                     'notes' => 'Successfully closed deal for two Premium Software Licenses.',
                 ],
                 [
@@ -303,7 +407,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Basic Support Plan',
                     'contact_name' => 'Jane Smith',
                     'qty' => 1,
-                    'deadline_days_ahead' => -5, // Deadline was in May, client dropped out
+                    'deadline_days_ahead' => -5,
                     'notes' => 'Client decided not to proceed after initial contact. Marked as junk.',
                 ],
                 [
@@ -311,7 +415,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Consulting Hours Package',
                     'contact_name' => 'Peter Jones',
                     'qty' => 5,
-                    'deadline_days_ahead' => 15, // Was in negotiation in May, still pending or moved to this month
+                    'deadline_days_ahead' => 15,
                     'notes' => 'Ongoing negotiation from last month. Client requested revised quote.',
                 ],
                 [
@@ -319,7 +423,7 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Enterprise CRM Solution',
                     'contact_name' => 'John Doe',
                     'qty' => 1,
-                    'deadline_days_ahead' => 28, // Initial contact in May, still in pipeline
+                    'deadline_days_ahead' => 28,
                     'notes' => 'First contact regarding CRM. Sent initial information pack.',
                 ],
                 [
@@ -327,16 +431,67 @@ class DatabaseSeeder extends Seeder
                     'product_name' => 'Custom Software Development',
                     'contact_name' => 'Sarah Connor',
                     'qty' => 1,
-                    'deadline_days_ahead' => 12, // Deal closed in May
+                    'deadline_days_ahead' => 12,
                     'notes' => 'Custom development project signed off in May.',
+                ],
+                [
+                    'column_name' => 'DEALING',
+                    'product_name' => 'Cloud Migration Service',
+                    'contact_name' => 'Alex Chen',
+                    'qty' => 1,
+                    'deadline_days_ahead' => 8,
+                    'notes' => 'Cloud migration project completed successfully.',
                 ],
             ]
         );
 
-        // Optional: Re-enable foreign key checks (if you disabled them)
-        // For MySQL: DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // --- 6. Seed default admin user ---
+        $adminUser = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'email_verified_at' => Carbon::now(),
+        ]);
 
+        // --- 7. Seed default sales user ---
+        $salesUser = User::create([
+            'name' => 'Sales User',
+            'email' => 'sales@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'sales',
+            'email_verified_at' => Carbon::now(),
+        ]);
+
+        $this->command->info('Users seeded successfully!');
         $this->command->info('Database seeding completed!');
+        $this->command->info('Default login credentials:');
+        $this->command->info('Admin: admin@example.com / password');
+        $this->command->info('Sales: sales@example.com / password');
+    }
+
+    /**
+     * Clear existing data before seeding
+     */
+    protected function clearExistingData(): void
+    {
+        $this->command->info('Clearing existing data...');
+        
+        // Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
+        // Clear tables in reverse dependency order
+        DB::table('transactions')->truncate();
+        DB::table('contacts')->truncate();
+        DB::table('products')->truncate();
+        DB::table('sectors')->truncate();
+        DB::table('columns')->truncate();
+        DB::table('users')->truncate();
+        
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        
+        $this->command->info('Existing data cleared successfully!');
     }
 
     /**
@@ -360,6 +515,22 @@ class DatabaseSeeder extends Seeder
         $this->command->info("Seeding transactions for {$description}...");
 
         foreach ($transactionsToSeed as $data) {
+            // Validate that all required IDs exist
+            if (!isset($productIds[$data['product_name']])) {
+                $this->command->error("Product '{$data['product_name']}' not found. Skipping transaction.");
+                continue;
+            }
+            
+            if (!isset($contactIds[$data['contact_name']])) {
+                $this->command->error("Contact '{$data['contact_name']}' not found. Skipping transaction.");
+                continue;
+            }
+            
+            if (!isset($columnIds[$data['column_name']])) {
+                $this->command->error("Column '{$data['column_name']}' not found. Skipping transaction.");
+                continue;
+            }
+
             // Retrieve product price based on product name
             $productPrice = DB::table('products')->where('id', $productIds[$data['product_name']])->value('price');
             $grandTotal = $productPrice * $data['qty'];
@@ -370,20 +541,13 @@ class DatabaseSeeder extends Seeder
 
             // updated_at will be after created_at, but not later than deadline (if positive)
             $updatedAt = $createdAt->copy()->addDays(rand(0, floor($data['deadline_days_ahead'] > 0 ? $data['deadline_days_ahead'] * 0.8 : 0)))
-                                  ->addHours(rand(1,5)) // Add some random hours
+                                  ->addHours(rand(1,5))
                                   ->addMinutes(rand(1,59));
 
             // Ensure updated_at is at least equal to created_at
             if ($updatedAt->lessThan($createdAt)) {
                 $updatedAt = $createdAt->copy();
             }
-
-            // Ensure product_id and contact_id exist before inserting
-            if (!isset($productIds[$data['product_name']]) || !isset($contactIds[$data['contact_name']])) {
-                $this->command->error("Skipping transaction for product '{$data['product_name']}' or contact '{$data['contact_name']}' due to missing ID.");
-                continue;
-            }
-
 
             DB::table('transactions')->insert([
                 'id' => (string) Str::uuid(),
@@ -394,22 +558,13 @@ class DatabaseSeeder extends Seeder
                 'current_price' => $productPrice,
                 'qty' => $data['qty'],
                 'grand_total' => $grandTotal,
-                'deadline' => $baseDate->copy()->addDays($data['deadline_days_ahead']), // Deadline relative to baseDate
+                'deadline' => $baseDate->copy()->addDays($data['deadline_days_ahead']),
                 'notes' => $data['notes'],
                 'created_at' => $createdAt,
                 'updated_at' => $updatedAt,
             ]);
         }
 
-        $this->call([
-            UserSeeder::class,
-            SectorSeeder::class,
-            ProductSeeder::class,
-            ColumnSeeder::class,
-            ContactSeeder::class,
-            TransactionSeeder::class,
-        //     // Add other seeders here if you create them later
-        ]);
-
+        $this->command->info("Transactions for {$description} seeded successfully!");
     }
 }

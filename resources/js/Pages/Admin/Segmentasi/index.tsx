@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { usePage, Head } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { usePage, Head, router } from '@inertiajs/react';
 import MySidebar from '../../../Layout/SidebarAdmin';
 import ReportControls from '../../../Layout/Navbar/NavbarSegmenAdmin';
+import Swal from 'sweetalert2';
 
 interface SegmentasiPasar {
     id: string;
     sector_id: string;
     sector_name: string;
     jumlah_item: number;
-    total_penjualan: string;
-    total_transaksi: string;
+    total_penjualan: number;
+    total_transaksi: number;
     kriteria_jumlah_item: string;
     kriteria_total_penjualan: string;
     kriteria_total_transaksi: string;
@@ -47,7 +48,8 @@ const getStatusColorClass = (status: string) => {
 const SegmentasiPasarTableRow: React.FC<{ segmentasiPasar: SegmentasiPasar }> = ({ segmentasiPasar }) => {
     const statusColorClass = getStatusColorClass(segmentasiPasar.status);
 
-    const parseToNumber = (val: string | undefined | null) => {
+    const parseToNumber = (val: number | string | undefined | null) => {
+        if (typeof val === 'number') return val;
         const num = parseFloat(val ?? '0');
         return isNaN(num) ? 0 : num;
     };
@@ -97,14 +99,78 @@ const SegmentasiPasarList: React.FC<Props> = () => {
     const averagesData = (props as any)?.averages ?? null;
     const show = (props as any)?.show ?? 'aktif';
 
-    const [segmentasiPasar] = useState<SegmentasiPasar[]>(segmentasiData);
-    const [averages] = useState(averagesData);
+    const [segmentasiPasar, setSegmentasiPasar] = useState<SegmentasiPasar[]>(segmentasiData);
+    const [averages, setAverages] = useState(averagesData);
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortColumn, setSortColumn] = useState<keyof SegmentasiPasar | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
 
     const itemsPerPage = 10;
+
+    // Auto-refresh data setiap 30 detik
+    useEffect(() => {
+        const interval = setInterval(() => {
+            refreshData();
+        }, 30000); // 30 detik
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Listen untuk perubahan di halaman lain (Manage Leads, Kanban, dll)
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'segmentasi_needs_refresh' && e.newValue === 'true') {
+                // Refresh data ketika ada perubahan di halaman lain
+                refreshData();
+                // Reset flag
+                localStorage.removeItem('segmentasi_needs_refresh');
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                // Refresh data ketika user kembali ke tab ini
+                refreshData();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    // Update state ketika props berubah
+    useEffect(() => {
+        setSegmentasiPasar(segmentasiData);
+        setAverages(averagesData);
+        setLastUpdate(new Date());
+    }, [segmentasiData, averagesData]);
+
+    const refreshData = () => {
+        setIsRefreshing(true);
+        router.reload({ only: ['segmentasi', 'averages'] });
+        
+        // Set timeout untuk reset refreshing state
+        setTimeout(() => {
+            setIsRefreshing(false);
+            setLastUpdate(new Date());
+            Swal.fire({
+                icon: 'success',
+                title: 'Data berhasil diperbarui!',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }, 1000);
+    };
 
     const safeLower = (val: string | null | undefined) => (val ?? '').toLowerCase();
 
@@ -153,7 +219,8 @@ const SegmentasiPasarList: React.FC<Props> = () => {
         return null;
     };
 
-    const parseToNumber = (val: string | undefined | null) => {
+    const parseToNumber = (val: number | string | undefined | null) => {
+        if (typeof val === 'number') return val;
         const num = parseFloat(val ?? '0');
         return isNaN(num) ? 0 : num;
     };
@@ -176,15 +243,39 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
-                            Daftar Segmentasi Pasar
-                        </h2>
-                        <ReportControls
-                            searchQuery={searchQuery}
-                            onSearchChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                            onPrintPdf={() => window.open('/segmentasi/export-pdf', '_blank')}
-                            onPrintExcel={() => window.open('/segmentasi/export-excel', '_blank')}
-                        />
+                        <div className="flex flex-col">
+                            <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
+                                Daftar Segmentasi Pasar
+                            </h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500">
+                                    Terakhir diperbarui: {lastUpdate.toLocaleTimeString('id-ID')}
+                                </span>
+                                {isRefreshing && (
+                                    <span className="text-xs text-blue-500 flex items-center gap-1">
+                                        <i className="fas fa-spinner fa-spin"></i>
+                                        Memperbarui...
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {/* Manual Refresh Button */}
+                            <button
+                                onClick={refreshData}
+                                disabled={isRefreshing}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            >
+                                <i className={`fas ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
+                                {isRefreshing ? 'Memperbarui...' : 'Refresh'}
+                            </button>
+                            <ReportControls
+                                searchQuery={searchQuery}
+                                onSearchChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                onPrintPdf={() => window.open('/segmentasi/export-pdf', '_blank')}
+                                onPrintExcel={() => window.open('/segmentasi/export-excel', '_blank')}
+                            />
+                        </div>
                     </div>
 
                     {/* Content */}
@@ -295,7 +386,7 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                                 </div>
                                 <div className="bg-purple-50 rounded-lg p-4">
                                     <p className="text-sm font-medium text-purple-700">Total Transaksi</p>
-                                    <p className="text-2xl font-bold text-purple-800">{(averages.avg_total_transaksi ?? 0).toLocaleString('id-ID')}</p>
+                                    <p className="text-2xl font-bold text-purple-800">{Math.round(averages.avg_total_transaksi ?? 0)}</p>
                                 </div>
                             </div>
                         </div>
