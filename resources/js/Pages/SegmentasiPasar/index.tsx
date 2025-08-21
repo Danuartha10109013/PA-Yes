@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { usePage, Head, router } from '@inertiajs/react';
 import MySidebar from '../../Layout/Sidebar';
 import ReportControls from '../../Layout/Navbar/NavbarSegmen';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import Swal from 'sweetalert2';
 
 interface SegmentasiPasar {
@@ -321,6 +322,17 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                             <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
                                 Daftar Segmentasi Pasar
                             </h2>
+                            <div className="mt-1">
+                                <Breadcrumbs
+                                    breadcrumbs={[
+                                        { title: 'Dashboard', href: '/dashboard' },
+                                        { title: 'Segmentasi Pasar', href: '/admin/SegmentasiPasar' },
+                                        ...(mode === 'arsip' || url.includes('show=arsip')
+                                            ? [{ title: 'Arsip', href: '/admin/SegmentasiPasar?show=arsip' }]
+                                            : [])
+                                    ]}
+                                />
+                            </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs text-gray-500">
                                     Terakhir diperbarui: {lastUpdate.toLocaleTimeString('id-ID')}
@@ -334,6 +346,20 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
+                            {(mode === 'arsip' || url.includes('show=arsip')) && (
+                                <button
+                                    onClick={() => {
+                                        const pathname = window.location.pathname;
+                                        router.get(pathname, {}, { replace: true, preserveScroll: true });
+                                        setCurrentPage(1);
+                                        setSearchQuery('');
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 bg-white text-gray-700 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    <i className="fas fa-times"></i>
+                                    Tutup Arsip
+                                </button>
+                            )}
                             {/* Manual Refresh Button */}
                             <button
                                 onClick={refreshData}

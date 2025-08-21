@@ -477,11 +477,8 @@ interface LeadColumnProps {
     // Add new props for contacts and products
     contacts: ContactOption[];
     products: ProductOption[];
-    // Add new props for column actions
+    // Only keep edit column action
     onEditColumn?: (column: ColumnData) => void;
-    onDuplicateColumn?: (column: ColumnData) => void;
-    onArchiveColumn?: (column: ColumnData) => void;
-    onDeleteColumn?: (column: ColumnData) => void;
 }
 
 const LeadColumn: React.FC<LeadColumnProps> = ({
@@ -499,11 +496,7 @@ const LeadColumn: React.FC<LeadColumnProps> = ({
     // Destructure new props
     contacts,
     products,
-    // Destructure column action props
     onEditColumn,
-    onDuplicateColumn,
-    onArchiveColumn,
-    onDeleteColumn,
 }) => {
     const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
     const columnMenuRef = useRef<HTMLDivElement>(null);
@@ -531,23 +524,11 @@ const LeadColumn: React.FC<LeadColumnProps> = ({
 
     const handleColumnAction = (action: string) => {
         setIsColumnMenuOpen(false);
-        
-        switch (action) {
-            case 'edit':
-                if (onEditColumn) onEditColumn(column);
-                break;
-            case 'duplicate':
-                if (onDuplicateColumn) onDuplicateColumn(column);
-                break;
-            case 'archive':
-                if (onArchiveColumn) onArchiveColumn(column);
-                break;
-            case 'delete':
-                if (onDeleteColumn) onDeleteColumn(column);
-                break;
-            default:
-                console.log(`Column action: ${action} for column: ${column.title}`);
+        if (action === 'edit' && onEditColumn) {
+            onEditColumn(column);
+            return;
         }
+        console.log(`Column action clicked: ${action} for column: ${column.title}`);
     };
     return (
         <div
@@ -591,34 +572,12 @@ const LeadColumn: React.FC<LeadColumnProps> = ({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <ul className="text-[#344767]">
-                                <li 
+                                <li
                                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                                     onClick={() => handleColumnAction('edit')}
                                 >
                                     <i className="fas fa-edit mr-2"></i>
                                     Edit Column
-                                </li>
-                                <li 
-                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                                    onClick={() => handleColumnAction('duplicate')}
-                                >
-                                    <i className="fas fa-copy mr-2"></i>
-                                    Duplicate
-                                </li>
-                                <li 
-                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                                    onClick={() => handleColumnAction('archive')}
-                                >
-                                    <i className="fas fa-archive mr-2"></i>
-                                    Archive
-                                </li>
-                                <li className="border-t border-gray-200"></li>
-                                <li 
-                                    className="px-3 py-2 hover:bg-red-50 cursor-pointer text-red-600"
-                                    onClick={() => handleColumnAction('delete')}
-                                >
-                                    <i className="fas fa-trash mr-2"></i>
-                                    Delete Column
                                 </li>
                             </ul>
                         </div>

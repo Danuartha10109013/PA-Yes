@@ -991,8 +991,8 @@ public function store(Request $request): RedirectResponse
             'phone' => $transaction->contact_phone ?? '-',
             // 'social_media' => json_decode($transaction->contact_social ?? '[]'),
             // 'address' => json_decode($transaction->contact_address ?? '[]'),
-            'social_media' => $transaction->contact_social ? json_decode($transaction->contact_social) : [],
-            'address' => $transaction->contact_address ? json_decode($transaction->contact_address) : [],
+            'social_media' => $transaction->contact_social ?? '-',
+            'address' => $transaction->contact_address ?? '-',
             'product' => $transaction->product_name ?? 'N/A',
             'deadline' => $deadlineDate,
             'assigneeInitials' => $lastUserInitials,
@@ -1011,6 +1011,7 @@ public function store(Request $request): RedirectResponse
             'lastUserBgColor' => $lastUserBgColor,
         ];
     });
+    Log::info($transactions);
 
     $columns = Column::all();
 
@@ -1029,11 +1030,13 @@ public function store(Request $request): RedirectResponse
         ];
     });
 
+
+
     return Inertia::render('Kanban/index', [
         'kanbanData' => $kanbanData,
         // 'contacts' => $contacts,
         // 'products' => $products,
-        'contacts' => Contact::select('id', 'name', 'company_name')->get(),
+        'contacts' => Contact::select('id', 'name', 'company_name',)->get(),
         'products' => Product::select('id', 'name', 'price')->get(), // Pastikan ini dikirim
         'columns' => Column::select('id', 'name')->get(), // Pastikan ini dikirim
         // 'columns' => $columns,
@@ -1747,8 +1750,8 @@ public function store(Request $request): RedirectResponse
             'company_name' => $transaction->company_name,
             'email' => $transaction->contact_email ?? '-',
             'phone' => $transaction->contact_phone ?? '-',
-            'social_media' => json_decode($transaction->contact_social ?? '[]'),
-            'address' => json_decode($transaction->contact_address ?? '[]'),
+            'social_media' =>$transaction->contact_social ?? '-',
+            'address' => $transaction->contact_address ?? '-',
             'product' => $transaction->product_name ?? 'N/A',
             'deadline' => $deadlineDate,
             'assigneeInitials' => $lastUserInitials,
@@ -1887,8 +1890,8 @@ public function arsip(Request $request)
             'company_name' => $transaction->company_name,
             'email' => $transaction->contact_email ?? '-',
             'phone' => $transaction->contact_phone ?? '-',
-            'social_media' => json_decode($transaction->contact_social ?? '[]'),
-            'address' => json_decode($transaction->contact_address ?? '[]'),
+            'social_media' => $transaction->contact_social ?? '-',
+            'address' => $transaction->contact_address ?? '-',
             'product' => $transaction->product_name ?? 'N/A',
             'deadline' => $deadlineDate,
             'assigneeInitials' => $lastUserInitials,

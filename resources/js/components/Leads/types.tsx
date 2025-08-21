@@ -139,8 +139,9 @@ export interface LeadDatas {
 
     email: string | null; // Email kontak, bisa null
     phone: string | null; // Telepon kontak, bisa null
-    social_media: string | null; // Media sosial kontak (disimpan sebagai string JSON), bisa null
-    address: string | null; // Alamat kontak (disimpan sebagai string JSON), bisa null
+    // Media sosial dan alamat dapat berupa string (CSV/JSON), array, objek, atau null
+    social_media: string | string[] | Record<string, any> | null;
+    address: string | string[] | Record<string, any> | null;
     // social_media: Record<string, string> | string[] | null | string; // Bisa objek, array, string, atau null
     // address: Record<string, string> | string[] | null | string; // Bisa objek, array, string, atau null
     // social_media: string[] | null;

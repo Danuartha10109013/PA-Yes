@@ -1212,7 +1212,6 @@ import MySidebar from '../../Layout/Sidebar';
 import AddLeadModal from './addlead';
 import DeleteLeadModal from './deletelead';
 import BoardHeader from './boardheader';
-import AddColumnModal from './AddColumnModal';
 import EditColumnModal from './EditColumnModal';
 import Swal from 'sweetalert2';
 
@@ -1259,9 +1258,7 @@ const BoardView: React.FC = () => {
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
     const [addLeadInitialColumnId, setAddLeadInitialColumnId] = useState<string>('');
     
-    // State untuk AddColumnModal
-    const [isAddColumnModalOpen, setIsAddColumnModalOpen] = useState(false);
-    
+    // (Removed) AddColumnModal state
     // State untuk EditColumnModal
     const [isEditColumnModalOpen, setIsEditColumnModalOpen] = useState(false);
     const [columnToEdit, setColumnToEdit] = useState<ColumnData | null>(null);
@@ -1321,12 +1318,12 @@ const BoardView: React.FC = () => {
 
                     // ✅ Perbaikan: parse jika bentuk string JSON
                     social_media: typeof lead.social_media === 'string'
-                        ? safeJsonParse(lead.social_media)
-                        : lead.social_media ?? null,
+                        ? (safeJsonParse(lead.social_media) ?? lead.social_media)
+                        : (lead.social_media ?? null),
 
                     address: typeof lead.address === 'string'
-                        ? safeJsonParse(lead.address)
-                        : lead.address ?? null,
+                        ? (safeJsonParse(lead.address) ?? lead.address)
+                        : (lead.address ?? null),
                 }));
             });
 
@@ -1448,45 +1445,7 @@ const BoardView: React.FC = () => {
         });
     };
 
-    const handleArchiveColumn = (column: ColumnData) => {
-        Swal.fire({
-            title: 'Archive Column',
-            text: `Are you sure you want to archive "${column.title}" column?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Archive',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // For now, just move to JUNK column
-                Swal.fire('Info', 'Archive feature will be implemented soon.', 'info');
-            }
-        });
-    };
-
-    const handleDeleteColumn = (column: ColumnData) => {
-        Swal.fire({
-            title: 'Delete Column',
-            text: `Are you sure you want to delete "${column.title}" column? This action cannot be undone.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Delete',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#d33'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(`/columns/${column.id}`, {
-                    onSuccess: () => {
-                        Swal.fire('Success!', 'Column deleted successfully.', 'success');
-                        router.reload({ only: ['kanbanData'] });
-                    },
-                    onError: (errors) => {
-                        Swal.fire('Error!', Object.values(errors).join(', '), 'error');
-                    }
-                });
-            }
-        });
-    };
+    // Archive/Delete column actions removed per request
 
     const handleDeleteModalConfirm = (leadId: string) => {
         router.delete(`/kanban/leads/${leadId}`, {
@@ -1498,19 +1457,7 @@ const BoardView: React.FC = () => {
         setIsDeleteModalOpen(false);
     };
 
-    // Handler untuk AddColumnModal
-    const handleOpenAddColumnModal = () => {
-        setIsAddColumnModalOpen(true);
-    };
-
-    const handleCloseAddColumnModal = () => {
-        setIsAddColumnModalOpen(false);
-    };
-
-    const handleAddColumnSuccess = () => {
-        // Refresh data setelah kolom ditambahkan
-        router.reload({ only: ['kanbanData'] });
-    };
+    // (Removed) AddColumnModal handlers
 
     const filteredLeads = leads.filter((lead) => {
         if (!lead) return false;
@@ -1556,7 +1503,6 @@ const BoardView: React.FC = () => {
                         contacts={contacts}
                         products={products}
                         columns={columns.map(c => ({ id: c.id, name: c.title }))}
-                        onAddColumn={handleOpenAddColumnModal}
                     />
                     <div className="flex space-x-4 overflow-x-auto p-3">
                         {columns.map(column => {
@@ -1581,11 +1527,7 @@ const BoardView: React.FC = () => {
                                     // Pass contacts and products to LeadColumn
                                     contacts={contacts}
                                     products={products}
-                                    // Pass column action handlers
                                     onEditColumn={handleEditColumn}
-                                    onDuplicateColumn={handleDuplicateColumn}
-                                    onArchiveColumn={handleArchiveColumn}
-                                    onDeleteColumn={handleDeleteColumn}
                                 />
                             );
                         })}
@@ -1609,12 +1551,6 @@ const BoardView: React.FC = () => {
                         lead={leadToDelete}
                     />
                 )}
-
-                <AddColumnModal
-                    isOpen={isAddColumnModalOpen}
-                    onClose={handleCloseAddColumnModal}
-                    onSuccess={handleAddColumnSuccess}
-                />
 
                 <EditColumnModal
                     isOpen={isEditColumnModalOpen}

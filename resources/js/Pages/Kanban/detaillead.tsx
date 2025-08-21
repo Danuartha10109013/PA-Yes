@@ -95,21 +95,56 @@
 //                         </div>
 
 //                         {/* Sosial Media */}
-//                         <div>
+//                         <div className="col-span-2">
 //                             <p className={labelClasses}>Sosial Media</p>
-//                             <p className={`${inputDisplayClasses} font-medium`}>{lead.social_media || '-'}</p>
+//                             {lead.contact?.social_media ? (
+//                                 <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+//                                     {(
+//                                         Array.isArray(lead.contact.social_media)
+//                                         ? lead.contact.social_media
+//                                         : typeof lead.contact.social_media === "string"
+//                                         ? lead.contact.social_media.split(",").map((s) => s.trim())
+//                                         : []
+//                                     ).map((item, index) => (
+//                                         <li key={index}>
+//                                             {typeof item === "string" ? item : item.url || JSON.stringify(item)}
+//                                         </li>
+//                                     ))}
+//                                 </ul>
+//                             ) : (
+//                                 <p className={`${inputDisplayClasses} font-medium`}>-</p>
+//                             )}
 //                         </div>
 
-//                         {/* Alamat (Spans both columns) */}
+//                         {/* Alamat */}
 //                         <div className="col-span-2">
 //                             <p className={labelClasses}>Alamat</p>
-//                             <p className={`${inputDisplayClasses} font-medium whitespace-pre-wrap`}>{lead.address || '-'}</p>
+//                             {lead.contact?.address ? (
+//                                 <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+//                                     {(
+//                                         Array.isArray(lead.contact.address)
+//                                         ? lead.contact.address
+//                                         : typeof lead.contact.address === "string"
+//                                         ? lead.contact.address.split(",").map((a) => a.trim())
+//                                         : []
+//                                     ).map((item, index) => (
+//                                         <li key={index}>
+//                                             {typeof item === "string" ? item : item.detail || JSON.stringify(item)}
+//                                         </li>
+//                                     ))}
+//                                 </ul>
+//                             ) : (
+//                                 <p className={`${inputDisplayClasses} font-medium`}>-</p>
+//                             )}
 //                         </div>
+
 
 //                         {/* Produk */}
 //                         <div>
 //                             <p className={labelClasses}>Produk</p>
-//                             <p className={`${inputDisplayClasses} font-medium`}>{lead.product || '-'}</p>
+//                             <p className={`${inputDisplayClasses} font-medium`}>
+//                                 {typeof lead.product === 'string' ? lead.product : (lead.product?.name ?? '-')}
+//                             </p>
 //                         </div>
 
 //                         {/* Harga Saat Ini */}
@@ -131,18 +166,16 @@
 //                         </div>
 
 //                         {/* Tenggat Waktu */}
-//                         {/* Pastikan Anda menambahkan ini jika ingin ditampilkan */}
 //                         <div>
 //                             <p className={labelClasses}>Tenggat Waktu</p>
 //                             <p className={`${inputDisplayClasses} font-medium`}>{formatDate(lead.deadline)}</p>
 //                         </div>
 
-//                         {/* Catatan (Spans both columns) */}
+//                         {/* Catatan */}
 //                         <div className="col-span-2">
 //                             <p className={labelClasses}>Catatan</p>
 //                             <p className={`${inputDisplayClasses} font-medium whitespace-pre-wrap`}>{lead.notes || '-'}</p>
 //                         </div>
-
 //                     </div>
 //                 </div>
 //             </div>
@@ -194,22 +227,42 @@ const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ isOpen, onClose, le
     const inputDisplayClasses = "border border-gray-300 rounded px-2 py-1 bg-gray-50 text-gray-700 text-sm";
     const labelClasses = "text-xs text-gray-500 block mb-0.5";
 
+    const extractList = (value: any): string[] => {
+        if (!value) return [];
+        if (Array.isArray(value)) {
+            return value.map((item) => {
+                if (typeof item === 'string') return item;
+                if (item && typeof item === 'object') {
+                    return item.url ?? item.detail ?? item.address ?? item.social ?? item.value ?? item.text ?? JSON.stringify(item);
+                }
+                return String(item);
+            });
+        }
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            try {
+                if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                    const parsed = JSON.parse(trimmed);
+                    return extractList(parsed);
+                }
+            } catch {}
+            return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+        if (typeof value === 'object') {
+            return extractList(Object.values(value));
+        }
+        return [];
+    };
+
+    const socialList = extractList((lead as any)?.contact?.social_media ?? lead.social_media);
+    const addressList = extractList((lead as any)?.contact?.address ?? lead.address);
+
     return (
-        <Drawer
-            isOpen={isOpen}
-            onClose={onClose}
-            position="right"
-            width="500px"
-            className="drawer-with-top-shadow"
-        >
-            <div className="p-4 flex flex-col h-full">
-                <div className="flex justify-between items-center mb-4">
+        <Drawer isOpen={isOpen} onClose={onClose} position="right" width="500px" className="drawer-with-top-shadow">
+            <div className="flex h-full flex-col p-4">
+                <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-[#344767]">Detail Lead</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700 text-xl"
-                        aria-label="Close"
-                    >
+                    <button onClick={onClose} className="text-xl text-gray-500 hover:text-gray-700" aria-label="Close">
                         &times;
                     </button>
                 </div>
@@ -239,57 +292,36 @@ const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ isOpen, onClose, le
                             <p className={labelClasses}>No. Telepon</p>
                             <p className={`${inputDisplayClasses} font-medium`}>{lead.phone || '-'}</p>
                         </div>
-
-                        {/* Sosial Media */}
                         <div className="col-span-2">
-                        <p className={labelClasses}>Sosial Media</p>
-                        {lead.social_media ? (
-                            <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
-                            {(
-                                Array.isArray(lead.social_media)
-                                ? lead.social_media
-                                : typeof lead.social_media === "string"
-                                ? lead.social_media.split(",").map((s) => s.trim())
-                                : []
-                            ).map((item, index) => (
-                                <li key={index}>
-                                {typeof item === "string" ? item : item.url || JSON.stringify(item)}
-                                </li>
-                            ))}
-                            </ul>
-                        ) : (
-                            <p className={`${inputDisplayClasses} font-medium`}>-</p>
-                        )}
+                            <p className={labelClasses}>Sosial Media</p>
+                            {socialList.length > 0 ? (
+                                <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+                                    {socialList.map((item, index) => (
+                                        <li key={index}>{item}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className={`${inputDisplayClasses} font-medium`}>-</p>
+                            )}
                         </div>
-
-                        {/* Alamat */}
                         <div className="col-span-2">
-                        <p className={labelClasses}>Alamat</p>
-                        {lead.address ? (
-                            <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
-                            {(
-                                Array.isArray(lead.address)
-                                ? lead.address
-                                : typeof lead.address === "string"
-                                ? lead.address.split(",").map((a) => a.trim())
-                                : []
-                            ).map((item, index) => (
-                                <li key={index}>
-                                {typeof item === "string" ? item : item.detail || JSON.stringify(item)}
-                                </li>
-                            ))}
-                            </ul>
-                        ) : (
-                            <p className={`${inputDisplayClasses} font-medium`}>-</p>
-                        )}
+                            <p className={labelClasses}>Alamat</p>
+                            {addressList.length > 0 ? (
+                                <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+                                    {addressList.map((item, index) => (
+                                        <li key={index}>{item}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className={`${inputDisplayClasses} font-medium`}>-</p>
+                            )}
                         </div>
-
 
                         {/* Produk */}
                         <div>
                             <p className={labelClasses}>Produk</p>
                             <p className={`${inputDisplayClasses} font-medium`}>
-                                {typeof lead.product === 'string' ? lead.product : (lead.product?.name ?? '-')}
+                                {typeof lead.product === 'string' ? lead.product : ((lead as any).product?.name ?? '-')}
                             </p>
                         </div>
 
@@ -320,7 +352,7 @@ const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ isOpen, onClose, le
                         {/* Catatan */}
                         <div className="col-span-2">
                             <p className={labelClasses}>Catatan</p>
-                            <p className={`${inputDisplayClasses} font-medium whitespace-pre-wrap`}>{lead.notes || '-'}</p>
+                            <p className={`${inputDisplayClasses} whitespace-pre-wrap font-medium`}>{lead.notes || '-'}</p>
                         </div>
                     </div>
                 </div>
