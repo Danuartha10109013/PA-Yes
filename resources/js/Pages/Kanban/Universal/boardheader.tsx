@@ -13,9 +13,12 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({ onSave, searchTerm, onSearchC
     const { url } = usePage(); // Ambil URL dari Inertia
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-    const isArchivePage = url.includes('/leads/arsip');
-
+    
+    // Aktif state untuk 4 tab saja
+    const isListActive = url.startsWith('/list/leads') && !url.includes('filter=');
+    const isBoardActive = url.startsWith('/kanban/leads');
+    const isDealingActive = url.includes('filter=dealing');
+    const isJunkActive = url.includes('filter=junk');
     const isActive = (path: string) => url.startsWith(path);
     const navigateToView = (path: string) => router.visit(path);
 
@@ -41,56 +44,36 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({ onSave, searchTerm, onSearchC
 
     return (
         <div className="p-3 max-w-full overflow-x-auto">
-            {/* View Toggles */}
+            {/* View Tabs (Consistent: List, Board, Dealing, Junk) */}
             <div className="flex items-center space-x-3 text-sm select-none">
                 <button
-                    className={getButtonClasses(isActive('/list/leads'))}
+                    className={getButtonClasses(isListActive)}
                     onClick={() => navigateToView('/list/leads')}
                 >
                     <i className="fas fa-list-alt"></i>
                     <span>List</span>
                 </button>
                 <button
-                    className={getButtonClasses(isActive('/kanban/leads'))}
+                    className={getButtonClasses(isBoardActive)}
                     onClick={() => navigateToView('/kanban/leads')}
                 >
                     <i className="fas fa-columns"></i>
                     <span>Board</span>
                 </button>
                 <button
-                    className={getButtonClasses(url.includes('/leads/arsip'))}
-                    onClick={() => navigateToView('/leads/arsip?show=arsip')}
+                    className={getButtonClasses(isDealingActive)}
+                    onClick={() => navigateToView('/list/leads?show=arsip&filter=dealing')}
                 >
-                    <i className="fas fa-archive"></i>
-                    <span>Archive</span>
+                    <i className="fas fa-handshake"></i>
+                    <span>Dealing</span>
                 </button>
-
-                {/* Filter buttons: Only show on archive page */}
-                {isArchivePage && (
-                    <>
-                        <button
-                            className={getButtonClasses(!url.includes('filter='))}
-                            onClick={() => navigateToView('/leads/arsip?show=arsip')}
-                        >
-                            <i className="fas fa-boxes"></i>
-                            <span>All</span>
-                        </button>
-                        <button
-                            className={getButtonClasses(url.includes('filter=dealing'))}
-                            onClick={() => navigateToView('/leads/arsip?show=arsip&filter=dealing')}
-                        >
-                            <i className="fas fa-handshake"></i>
-                            <span>Dealing</span>
-                        </button>
-                        <button
-                            className={getButtonClasses(url.includes('filter=junk'))}
-                            onClick={() => navigateToView('/leads/arsip?show=arsip&filter=junk')}
-                        >
-                            <i className="fas fa-trash-alt"></i>
-                            <span>Junk</span>
-                        </button>
-                    </>
-                )}
+                <button
+                    className={getButtonClasses(isJunkActive)}
+                    onClick={() => navigateToView('/list/leads?show=arsip&filter=junk')}
+                >
+                    <i className="fas fa-trash-alt"></i>
+                    <span>Junk</span>
+                </button>
 
                 {/* Add Lead */}
                 <span

@@ -1204,7 +1204,7 @@
 
 
 // BoardView.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePage, router, Head } from '@inertiajs/react';
 import LeadColumn from '@/components/Leads/KanbanColumn';
 import { LeadDatas, ColumnData, ContactOption, ProductOption } from '@/components/Leads/types';
@@ -1242,8 +1242,8 @@ const BoardView: React.FC = () => {
     useEffect(() => {
         console.log('✅ BoardView - contactsFromPage:', contactsFromPage);
         console.log('✅ BoardView - productsFromPage:', productsFromPage);
-        setContacts(contactsFromPage);
-        setProducts(productsFromPage);
+        setContacts(contactsFromPage as ContactOption[]);
+        setProducts(productsFromPage as ProductOption[]);
     }, [contactsFromPage, productsFromPage]);
 
 
@@ -1289,9 +1289,11 @@ const BoardView: React.FC = () => {
 
     useEffect(() => {
         if (errors?.message) {
-            Swal.fire({ icon: 'error', title: 'Gagal!', text: errors.message });
+            const msg = typeof errors.message === 'string' ? errors.message : '';
+            Swal.fire({ icon: 'error', title: 'Gagal!', text: msg });
         } else if (success) {
-            Swal.fire({ icon: 'success', title: 'Berhasil!', text: success, timer: 2000, showConfirmButton: false });
+            const msg = typeof success === 'string' ? success : '';
+            Swal.fire({ icon: 'success', title: 'Berhasil!', text: msg, timer: 2000, showConfirmButton: false });
         }
     }, [errors, success]);
 
@@ -1345,6 +1347,12 @@ const BoardView: React.FC = () => {
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>, columnId: string) => {
         e.preventDefault();
         setDragOverColumnId(columnId);
+    };
+
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+            setDragOverColumnId(null);
+        }
     };
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetColumnId: string) => {
@@ -1512,11 +1520,27 @@ const BoardView: React.FC = () => {
         const trx = lead.trx ?? '';
         const productName = typeof lead.product === 'string'
             ? lead.product
-            : lead.product?.name ?? ''; // assuming product can be an object with name
+            : (lead as any).product?.name ?? '';
 
         return [name, companyName, trx, productName]
             .some(field => field.toLowerCase().includes(searchTerm.toLowerCase()));
     });
+
+    // Exclude columns JUNK and DEALING and any leads inside them
+    const excludedColumnIds = useMemo(() => {
+        return new Set(
+            columns
+                .filter(c => {
+                    const title = (c.title || '').toString().trim().toUpperCase();
+                    return title === 'JUNK' || title === 'DEALING';
+                })
+                .map(c => c.id)
+        );
+    }, [columns]);
+
+    const visibleLeads = useMemo(() => {
+        return filteredLeads.filter(l => !excludedColumnIds.has(l.columnId));
+    }, [filteredLeads, excludedColumnIds]);
 
 
     return (
@@ -1535,31 +1559,36 @@ const BoardView: React.FC = () => {
                         onAddColumn={handleOpenAddColumnModal}
                     />
                     <div className="flex space-x-4 overflow-x-auto p-3">
-                        {columns.map(column => (
-                            <LeadColumn
-                                key={column.id}
-                                column={column}
-                                leads={filteredLeads.filter(l => l.columnId === column.id)}
-                                onDragStart={handleDragStart}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={handleDragOver}
-                                onDrop={handleDrop}
-                                isDragOver={dragOverColumnId === column.id}
-                                onAddLead={() => openAddLeadModal(column.id)}
-                                onEditLeadSuccess={(updated) =>
-                                    setLeads(prev => prev.map(l => l.id === updated.id ? updated : l))
-                                }
-                                onDeleteLead={handleDeleteLead}
-                                // Pass contacts and products to LeadColumn
-                                contacts={contacts}
-                                products={products}
-                                // Pass column action handlers
-                                onEditColumn={handleEditColumn}
-                                onDuplicateColumn={handleDuplicateColumn}
-                                onArchiveColumn={handleArchiveColumn}
-                                onDeleteColumn={handleDeleteColumn}
-                            />
-                        ))}
+                        {columns.map(column => {
+                            const isExcluded = excludedColumnIds.has(column.id);
+                            const columnLeads = isExcluded ? [] : visibleLeads.filter(l => l.columnId === column.id);
+                            return (
+                                <LeadColumn
+                                    key={column.id}
+                                    column={column}
+                                    leads={columnLeads}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    isDragOver={dragOverColumnId === column.id}
+                                    onAddLead={() => openAddLeadModal(column.id)}
+                                    onEditLeadSuccess={(updated) =>
+                                        setLeads(prev => prev.map(l => l.id === updated.id ? updated : l))
+                                    }
+                                    onDeleteLead={handleDeleteLead}
+                                    // Pass contacts and products to LeadColumn
+                                    contacts={contacts}
+                                    products={products}
+                                    // Pass column action handlers
+                                    onEditColumn={handleEditColumn}
+                                    onDuplicateColumn={handleDuplicateColumn}
+                                    onArchiveColumn={handleArchiveColumn}
+                                    onDeleteColumn={handleDeleteColumn}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -1572,12 +1601,14 @@ const BoardView: React.FC = () => {
                     products={products}
                 />
 
-                <DeleteLeadModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onDelete={handleDeleteModalConfirm}
-                    lead={leadToDelete}
-                />
+                {leadToDelete && (
+                    <DeleteLeadModal
+                        isOpen={isDeleteModalOpen}
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onDelete={handleDeleteModalConfirm}
+                        lead={leadToDelete}
+                    />
+                )}
 
                 <AddColumnModal
                     isOpen={isAddColumnModalOpen}

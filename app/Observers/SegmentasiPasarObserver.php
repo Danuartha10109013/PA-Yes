@@ -114,6 +114,110 @@ class SegmentasiPasarObserver
             ]
         );
         Log::info("SegmentasiPasar entry initialized for new sector '{$sector->name}' (ID: {$sector->id}) for current month/year.");
+
+        // Recalculate metrics for the new sector for current month/year
+        $this->recalculateSegmentasiForSector($sector, now()->month, now()->year);
+    }
+
+    /**
+     * Recalculate SegmentasiPasar aggregates and status for a given sector and period.
+     */
+    protected function recalculateSegmentasiForSector(Sector $sector, ?int $month = null, ?int $year = null): void
+    {
+        $currentMonth = $month ?? now()->month;
+        $currentYear = $year ?? now()->year;
+
+        // Contacts for this sector
+        $contactIds = $sector->contacts()->pluck('id');
+
+        if ($contactIds->isEmpty()) {
+            SegmentasiPasar::updateOrCreate(
+                [
+                    'sector_id' => $sector->id,
+                    'month' => $currentMonth,
+                    'year' => $currentYear,
+                ],
+                [
+                    'jumlah_item' => 0,
+                    'total_penjualan' => 0,
+                    'total_transaksi' => 0,
+                    'kriteria_jumlah_item' => 'NO',
+                    'kriteria_total_penjualan' => 'NO',
+                    'kriteria_total_transaksi' => 'NO',
+                    'status' => 'Potensial Rendah',
+                ]
+            );
+            return;
+        }
+
+        // Optional: filter only DEALING transactions if the column exists
+        $dealingColumn = Column::where('name', 'DEALING')->first();
+
+        $trxQuery = Transaction::whereIn('contact_id', $contactIds)
+            ->whereMonth('updated_at', $currentMonth)
+            ->whereYear('updated_at', $currentYear);
+
+        if ($dealingColumn) {
+            $trxQuery->where('column_id', $dealingColumn->id);
+        }
+
+        $transactions = $trxQuery->get();
+
+        $jumlahItem = (int) $transactions->sum('qty');
+        $totalPenjualan = (float) $transactions->sum('grand_total');
+        $totalTransaksi = (int) $transactions->count();
+
+        // Global averages for current month/year (exclude current sector to avoid self-bias)
+        $avgQty = (float) (SegmentasiPasar::where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->where('sector_id', '!=', $sector->id)
+            ->avg('jumlah_item') ?? 0);
+        $avgSales = (float) (SegmentasiPasar::where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->where('sector_id', '!=', $sector->id)
+            ->avg('total_penjualan') ?? 0);
+        $avgTransactions = (float) (SegmentasiPasar::where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->where('sector_id', '!=', $sector->id)
+            ->avg('total_transaksi') ?? 0);
+
+        $kriteriaJumlahItem = $jumlahItem > $avgQty ? 'YES' : 'NO';
+        $kriteriaTotalPenjualan = ($avgSales > 0 && $totalPenjualan > $avgSales) || ($avgSales == 0 && $totalPenjualan > 0) ? 'YES' : 'NO';
+        $kriteriaTotalTransaksi = $totalTransaksi > $avgTransactions ? 'YES' : 'NO';
+
+        // Determine status
+        if ($kriteriaJumlahItem === 'YES' && $kriteriaTotalPenjualan === 'YES') {
+            $status = 'Potensial Tinggi';
+        } elseif ($kriteriaTotalTransaksi === 'YES') {
+            $status = 'Potensial Sedang';
+        } else {
+            $status = 'Potensial Rendah';
+        }
+
+        SegmentasiPasar::updateOrCreate(
+            [
+                'sector_id' => $sector->id,
+                'month' => $currentMonth,
+                'year' => $currentYear,
+            ],
+            [
+                'jumlah_item' => $jumlahItem,
+                'total_penjualan' => $totalPenjualan,
+                'total_transaksi' => $totalTransaksi,
+                'kriteria_jumlah_item' => $kriteriaJumlahItem,
+                'kriteria_total_penjualan' => $kriteriaTotalPenjualan,
+                'kriteria_total_transaksi' => $kriteriaTotalTransaksi,
+                'status' => $status,
+            ]
+        );
+    }
+
+    /**
+     * Recalculate when sector is updated (e.g., contacts changed via relationships elsewhere).
+     */
+    public function updated(Sector $sector): void
+    {
+        $this->recalculateSegmentasiForSector($sector, now()->month, now()->year);
     }
 
     /**

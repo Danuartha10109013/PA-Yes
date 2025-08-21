@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePage, Head, router } from '@inertiajs/react';
 import MySidebar from '../../Layout/Sidebar';
 import ReportControls from '../../Layout/Navbar/NavbarSegmen';
@@ -97,7 +97,7 @@ const SegmentasiPasarList: React.FC<Props> = () => {
 
     const segmentasiData = (props as any)?.segmentasi ?? [];
     const averagesData = (props as any)?.averages ?? null;
-    const show = (props as any)?.show ?? 'aktif';
+    const mode = (props as any)?.mode ?? 'current';
 
     const [segmentasiPasar, setSegmentasiPasar] = useState<SegmentasiPasar[]>(segmentasiData);
     const [averages, setAverages] = useState(averagesData);
@@ -107,6 +107,66 @@ const SegmentasiPasarList: React.FC<Props> = () => {
     const [sortColumn, setSortColumn] = useState<keyof SegmentasiPasar | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Fallback averages computed from current data when backend averages are missing
+    const computedAverages = useMemo(() => {
+        if (!segmentasiPasar || segmentasiPasar.length === 0) {
+            return {
+                avg_jumlah_item: 0,
+                avg_total_penjualan: 0,
+                avg_total_transaksi: 0,
+            };
+        }
+        const count = segmentasiPasar.length;
+        const sumJumlahItem = segmentasiPasar.reduce((sum, item) => sum + (Number(item.jumlah_item) || 0), 0);
+        const sumTotalPenjualan = segmentasiPasar.reduce((sum, item) => sum + (Number(item.total_penjualan) || 0), 0);
+        const sumTotalTransaksi = segmentasiPasar.reduce((sum, item) => sum + (Number(item.total_transaksi) || 0), 0);
+        return {
+            avg_jumlah_item: sumJumlahItem / count,
+            avg_total_penjualan: sumTotalPenjualan / count,
+            avg_total_transaksi: sumTotalTransaksi / count,
+        };
+    }, [segmentasiPasar]);
+
+    const effectiveAverages = useMemo(() => {
+        const hasBackendAverages = averages && (
+            typeof averages.avg_jumlah_item !== 'undefined' ||
+            typeof averages.avg_total_penjualan !== 'undefined' ||
+            typeof averages.avg_total_transaksi !== 'undefined'
+        );
+        return hasBackendAverages ? averages : computedAverages;
+    }, [averages, computedAverages]);
+
+    // Totals based on currently filtered data (to match visible list)
+    // Note: defined after filteredData below; wrap in function and compute later
+    const getTotals = (rows: SegmentasiPasar[]) => {
+        const sumJumlahItem = rows.reduce((sum, item) => sum + (Number(item.jumlah_item) || 0), 0);
+        const sumTotalPenjualan = rows.reduce((sum, item) => sum + (Number(item.total_penjualan) || 0), 0);
+        const sumTotalTransaksi = rows.reduce((sum, item) => sum + (Number(item.total_transaksi) || 0), 0);
+        return {
+            jumlah_item: sumJumlahItem,
+            total_penjualan: sumTotalPenjualan,
+            total_transaksi: sumTotalTransaksi,
+        };
+    };
+
+    // Averages helper based on a given set of rows (respects current filters)
+    const getAveragesFromRows = (rows: SegmentasiPasar[]) => {
+        const count = rows.length || 0;
+        if (count === 0) {
+            return {
+                avg_jumlah_item: 0,
+                avg_total_penjualan: 0,
+                avg_total_transaksi: 0,
+            };
+        }
+        const totals = getTotals(rows);
+        return {
+            avg_jumlah_item: totals.jumlah_item / count,
+            avg_total_penjualan: totals.total_penjualan / count,
+            avg_total_transaksi: totals.total_transaksi / count,
+        };
+    };
 
     // Auto-refresh data setiap 30 detik
     useEffect(() => {
@@ -177,13 +237,24 @@ const SegmentasiPasarList: React.FC<Props> = () => {
 
     const safeLower = (val: string | null | undefined) => (val ?? '').toLowerCase();
 
-    const filteredData = segmentasiPasar.filter(item =>
-        safeLower(item.sector_name).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.kriteria_jumlah_item).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.kriteria_total_penjualan).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.kriteria_total_transaksi).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.status).includes(searchQuery.toLowerCase())
-    );
+    const filteredData = segmentasiPasar
+        .filter((item) => {
+            // Exclude rows if a column field exists and is JUNK or DEALING
+            const anyItem = item as any;
+            const rawColumn = anyItem?.column ?? anyItem?.column_name ?? anyItem?.columnName ?? anyItem?.status_column ?? '';
+            const colUpper = String(rawColumn).trim().toUpperCase();
+            if (colUpper === 'JUNK' || colUpper === 'DEALING') {
+                return false;
+            }
+            return true;
+        })
+        .filter(item =>
+            safeLower(item.sector_name).includes(searchQuery.toLowerCase()) ||
+            safeLower(item.kriteria_jumlah_item).includes(searchQuery.toLowerCase()) ||
+            safeLower(item.kriteria_total_penjualan).includes(searchQuery.toLowerCase()) ||
+            safeLower(item.kriteria_total_transaksi).includes(searchQuery.toLowerCase()) ||
+            safeLower(item.status).includes(searchQuery.toLowerCase())
+        );
 
     const sortedData = [...filteredData].sort((a, b) => {
         if (!sortColumn) return 0;
@@ -375,21 +446,39 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                     </div>
 
                     {/* Averages Section */}
-                    {show !== 'arsip' && averages && (
+                    {mode !== 'arsip' && (
                         <div className="mt-6 bg-white rounded-xl shadow-md p-6">
-                            <h3 className="font-semibold text-gray-800 mb-4 text-lg">Rata-rata Bulan Ini:</h3>
+                            <h3 className="font-semibold text-gray-800 mb-4 text-lg">Total Bulan Ini:</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-blue-50 rounded-lg p-4">
                                     <p className="text-sm font-medium text-blue-700">Jumlah Item</p>
-                                    <p className="text-2xl font-bold text-blue-800">{Math.round(averages.avg_jumlah_item ?? 0)}</p>
+                                    <p className="text-2xl font-bold text-blue-800">{Number(getTotals(filteredData).jumlah_item ?? 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                 </div>
                                 <div className="bg-green-50 rounded-lg p-4">
                                     <p className="text-sm font-medium text-green-700">Total Penjualan</p>
-                                    <p className="text-2xl font-bold text-green-800">Rp{(averages.avg_total_penjualan ?? 0).toLocaleString('id-ID')}</p>
+                                    <p className="text-2xl font-bold text-green-800">Rp{Number(getTotals(filteredData).total_penjualan).toLocaleString('id-ID')}</p>
                                 </div>
                                 <div className="bg-purple-50 rounded-lg p-4">
                                     <p className="text-sm font-medium text-purple-700">Total Transaksi</p>
-                                    <p className="text-2xl font-bold text-purple-800">{Math.round(averages.avg_total_transaksi ?? 0)}</p>
+                                    <p className="text-2xl font-bold text-purple-800">{Number(getTotals(filteredData).total_transaksi ?? 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                </div>
+                            </div>
+                            {/* Filter-aware averages */}
+                            <div className="mt-6">
+                                <h4 className="font-semibold text-gray-800 mb-4 text-lg">Rata-rata Bulan Ini:</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-blue-50 rounded-lg p-4">
+                                        <p className="text-sm font-medium text-blue-700">Jumlah Item</p>
+                                        <p className="text-2xl font-bold text-blue-800">{Number(getAveragesFromRows(filteredData).avg_jumlah_item ?? 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    </div>
+                                    <div className="bg-green-50 rounded-lg p-4">
+                                        <p className="text-sm font-medium text-green-700">Total Penjualan</p>
+                                        <p className="text-2xl font-bold text-green-800">Rp{Number(getAveragesFromRows(filteredData).avg_total_penjualan).toLocaleString('id-ID')}</p>
+                                    </div>
+                                    <div className="bg-purple-50 rounded-lg p-4">
+                                        <p className="text-sm font-medium text-purple-700">Total Transaksi</p>
+                                        <p className="text-2xl font-bold text-purple-800">{Number(getAveragesFromRows(filteredData).avg_total_transaksi ?? 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -448,7 +537,7 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                             </div>
                             
                             <div className="text-sm text-gray-600">
-                                Halaman {currentPage} dari {totalPages} ({sortedData.length} total data)
+                                Halaman {currentPage} dari {totalPages} ({paginatedData.length} total data)
                             </div>
                         </div>
                     )}

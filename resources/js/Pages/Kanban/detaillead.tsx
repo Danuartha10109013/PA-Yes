@@ -242,31 +242,48 @@ const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ isOpen, onClose, le
 
                         {/* Sosial Media */}
                         <div className="col-span-2">
-                            <p className={labelClasses}>Sosial Media</p>
-                            {Array.isArray(lead.social_media) && lead.social_media.length > 0 ? (
-                                <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
-                                    {lead.social_media.map((item, index) => (
-                                        <li key={index}>{item}</li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className={`${inputDisplayClasses} font-medium`}>-</p>
-                            )}
+                        <p className={labelClasses}>Sosial Media</p>
+                        {lead.social_media ? (
+                            <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+                            {(
+                                Array.isArray(lead.social_media)
+                                ? lead.social_media
+                                : typeof lead.social_media === "string"
+                                ? lead.social_media.split(",").map((s) => s.trim())
+                                : []
+                            ).map((item, index) => (
+                                <li key={index}>
+                                {typeof item === "string" ? item : item.url || JSON.stringify(item)}
+                                </li>
+                            ))}
+                            </ul>
+                        ) : (
+                            <p className={`${inputDisplayClasses} font-medium`}>-</p>
+                        )}
                         </div>
 
                         {/* Alamat */}
                         <div className="col-span-2">
-                            <p className={labelClasses}>Alamat</p>
-                            {Array.isArray(lead.address) && lead.address.length > 0 ? (
-                                <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
-                                    {lead.address.map((item, index) => (
-                                        <li key={index}>{item}</li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className={`${inputDisplayClasses} font-medium`}>-</p>
-                            )}
+                        <p className={labelClasses}>Alamat</p>
+                        {lead.address ? (
+                            <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+                            {(
+                                Array.isArray(lead.address)
+                                ? lead.address
+                                : typeof lead.address === "string"
+                                ? lead.address.split(",").map((a) => a.trim())
+                                : []
+                            ).map((item, index) => (
+                                <li key={index}>
+                                {typeof item === "string" ? item : item.detail || JSON.stringify(item)}
+                                </li>
+                            ))}
+                            </ul>
+                        ) : (
+                            <p className={`${inputDisplayClasses} font-medium`}>-</p>
+                        )}
                         </div>
+
 
                         {/* Produk */}
                         <div>

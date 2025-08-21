@@ -497,8 +497,10 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-    const isArchivePage = url.includes('/list/leads');
-
+    const isListActive = url.startsWith('/list/leads') && !url.includes('show=arsip');
+    const isBoardActive = url.startsWith('/kanban/leads');
+    const isDealingActive = url.includes('filter=dealing');
+    const isJunkActive = url.includes('filter=junk');
     const isActive = (path: string) => url.startsWith(path);
     const navigateToView = (path: string) => router.visit(path);
 
@@ -527,30 +529,28 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
             {/* View Switcher */}
             <div className="flex items-center space-x-3 text-sm select-none">
                 <button
-                    className={getButtonClasses(
-                        url.startsWith('/list/leads') && !url.includes('show=arsip')
-                    )}
+                    className={getButtonClasses(isListActive)}
                     onClick={() => navigateToView('/list/leads')}
                 >
                     <i className="fas fa-list-alt"></i>
                     <span>List</span>
                 </button>
                 <button
-                    className={getButtonClasses(isActive('/kanban/leads'))}
+                    className={getButtonClasses(isBoardActive)}
                     onClick={() => navigateToView('/kanban/leads')}
                 >
                     <i className="fas fa-columns"></i>
                     <span>Board</span>
                 </button>
                 <button
-                    className={getButtonClasses(isArchivePage && url.includes('filter=dealing'))}
+                    className={getButtonClasses(isDealingActive)}
                     onClick={() => navigateToView('/list/leads?show=arsip&filter=dealing')}
                 >
                     <i className="fas fa-handshake"></i>
                     <span>Dealing</span>
                 </button>
                 <button
-                    className={getButtonClasses(isArchivePage && url.includes('filter=junk'))}
+                    className={getButtonClasses(isJunkActive)}
                     onClick={() => navigateToView('/list/leads?show=arsip&filter=junk')}
                 >
                     <i className="fas fa-trash-alt"></i>
