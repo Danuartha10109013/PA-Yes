@@ -7,6 +7,7 @@ import {
 } from "react-beautiful-dnd";
 import { Columns } from "../../components/kanban/types";
 import { initialKanbanData } from "../../components/kanban/mock";
+import { Breadcrumbs } from "../../components/breadcrumbs";
 
 const Manageleads: React.FC = () => {
     const [columns, setColumns] = useState<Columns>(initialKanbanData);
@@ -42,8 +43,17 @@ const Manageleads: React.FC = () => {
     };
 
     return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-4 p-4 overflow-x-auto">
+        <div className="min-h-screen bg-gray-50">
+            <div className="p-4">
+                <Breadcrumbs
+                    breadcrumbs={[
+                        { title: 'Dashboard', href: '/dashboard' },
+                        { title: 'Manage Leads', href: '/manageleads' },
+                    ]}
+                />
+            </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="flex gap-4 p-4 overflow-x-auto">
                 {Object.entries(columns).map(([colId, col]) => (
                     <Droppable droppableId={colId} key={colId}>
                         {(provided) => (
@@ -82,6 +92,7 @@ const Manageleads: React.FC = () => {
                 ))}
             </div>
         </DragDropContext>
+        </div>
     );
 };
 

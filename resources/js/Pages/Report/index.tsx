@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import MySidebar from '../../Layout/Sidebar'; // Assuming this path is correct
 import ReportControls from '../../Layout/Navbar/NavbarReport'; // Adjust path based on your project structure
+import { Breadcrumbs } from '../../components/breadcrumbs';
 
 // Define the interfaces for your data
 interface Transaction {
@@ -274,10 +275,20 @@ const ReportsList: React.FC = () => {
 
                 <main className="flex-1 p-6">
                 <div className="w-full max-w-7xl mx-auto">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-[#344767] font-semibold text-lg">
-                            Daftar Laporan Transaksi
-                        </h2>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div className="flex flex-col">
+                            <h2 className="text-[#344767] font-semibold text-lg">
+                                Daftar Laporan Transaksi
+                            </h2>
+                            <div className="mt-1">
+                                <Breadcrumbs
+                                    breadcrumbs={[
+                                        { title: 'Dashboard', href: '/dashboard' },
+                                        { title: 'Laporan', href: '/reports' },
+                                    ]}
+                                />
+                            </div>
+                        </div>
                         {/* Use the reusable ReportControls component */}
                         <ReportControls
                             searchQuery={searchQuery}

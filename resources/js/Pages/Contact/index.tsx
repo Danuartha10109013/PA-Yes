@@ -1281,6 +1281,7 @@ import EditContactModal from './editcontact';
 import DeleteContactModal from './deletecontact';
 import ContactDetailDrawer from './detailcontact';
 import Search from '@/components/Search/search';
+import { Breadcrumbs } from '../../components/breadcrumbs';
 import { usePage, router, Head } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import { Contact as ContactType, Sector as SectorType } from '@/components/Types/types';
@@ -1461,8 +1462,18 @@ const ContactsIndex: React.FC = () => {
                 <MySidebar />
                 <main className="flex-1 px-4 py-6">
                 <div className="w-full mx-auto">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-[#344767] font-semibold text-lg">Daftar Kontak</h2>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div className="flex flex-col">
+                            <h2 className="text-[#344767] font-semibold text-lg">Daftar Kontak</h2>
+                            <div className="mt-1">
+                                <Breadcrumbs
+                                    breadcrumbs={[
+                                        { title: 'Dashboard', href: '/dashboard' },
+                                        { title: 'Kontak', href: '/contacts' },
+                                    ]}
+                                />
+                            </div>
+                        </div>
                         <div className="flex items-center space-x-4">
                             <Search searchQuery={searchQuery} onSearchChange={e => setSearchQuery(e.target.value)} />
                             <label className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md cursor-pointer">

@@ -6,6 +6,7 @@ import EditUserModal from './editUser';
 import DeleteUserModal from './deleteUser';
 import { UserData, User as UserType } from '@/components/Types/types';
 import TableRowUser from '@/components/Tabel/TabelRowUser';
+import { Breadcrumbs } from '../../../components/breadcrumbs';
 import Swal from 'sweetalert2';
 
 const UsersIndex: React.FC = () => {
@@ -253,9 +254,19 @@ const UsersIndex: React.FC = () => {
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
-                            Daftar Pengguna
-                        </h2>
+                        <div className="flex flex-col">
+                            <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
+                                Daftar Pengguna
+                            </h2>
+                            <div className="mt-1">
+                                <Breadcrumbs
+                                    breadcrumbs={[
+                                        { title: 'Dashboard', href: '/dashboard' },
+                                        { title: 'Kelola User', href: '/admin/kelola-user' },
+                                    ]}
+                                />
+                            </div>
+                        </div>
                         <button
                             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out w-full sm:w-auto"
                             onClick={handleOpenAddModal}

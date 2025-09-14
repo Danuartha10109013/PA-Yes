@@ -396,6 +396,7 @@ import DetailProductModal from './detailproduct';
 import DeleteProductModal from './deleteproduct';
 import TableRowProduct from '@/components/Tabel/TabelRowProduct';
 import Search from '@/components/Search/search';
+import { Breadcrumbs } from '../../components/breadcrumbs';
 import Swal from 'sweetalert2';
 import { Product as ProductType } from '@/components/Types/types';
 
@@ -523,6 +524,14 @@ const ProductsIndex: React.FC = () => {
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <div className="mb-4">
                         <h2 className="text-[#344767] font-semibold text-lg mb-2">Daftar Produk</h2>
+                        <div className="mb-2">
+                            <Breadcrumbs
+                                breadcrumbs={[
+                                    { title: 'Dashboard', href: '/dashboard' },
+                                    { title: 'Produk', href: '/products' },
+                                ]}
+                            />
+                        </div>
                         <div className="flex flex-col md:flex-row justify-between gap-4">
                             <Search searchQuery={searchQuery} onSearchChange={handleSearchChange} />
                             <button

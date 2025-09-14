@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { usePage, Head, router } from '@inertiajs/react';
 import MySidebar from '../../../Layout/SidebarAdmin';
 import ReportControls from '../../../Layout/Navbar/NavbarSegmenAdmin';
+import { Breadcrumbs } from '../../../components/breadcrumbs';
 import Swal from 'sweetalert2';
 
 interface SegmentasiPasar {
@@ -247,6 +248,14 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                             <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
                                 Daftar Segmentasi Pasar
                             </h2>
+                            <div className="mt-1">
+                                <Breadcrumbs
+                                    breadcrumbs={[
+                                        { title: 'Dashboard', href: '/dashboard' },
+                                        { title: 'Segmentasi Pasar', href: '/admin/segmentasi' },
+                                    ]}
+                                />
+                            </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs text-gray-500">
                                     Terakhir diperbarui: {lastUpdate.toLocaleTimeString('id-ID')}

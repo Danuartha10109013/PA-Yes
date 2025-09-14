@@ -293,6 +293,7 @@ import DeleteLeadModal from './deletelead';
 import { LeadDatas } from '@/components/Leads/types';
 import TableRowTransactionLead from '@/components/Tabel/TabelRowLeads';
 import BoardHeader from '@/Pages/Kanban/Universal/boardheader';
+import { Breadcrumbs } from '../../components/breadcrumbs';
 import { usePage, router, useForm, Head } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
@@ -470,6 +471,15 @@ const LeadsIndex: React.FC = () => {
                     searchTerm={searchTerm}
                     onSearchChange={handleSearchChange}
                 />
+                <div className="px-6 pt-3">
+                    <Breadcrumbs
+                        breadcrumbs={[
+                            { title: 'Dashboard', href: '/dashboard' },
+                            { title: 'Manage Leads', href: '/kanban' },
+                            { title: 'Arsip', href: '/kanban/arsip' },
+                        ]}
+                    />
+                </div>
                 <main className="flex-1 p-6 pt-1 p-3">
                     <div className="bg-white rounded-xl shadow-md overflow-hidden">
                         {filteredLeads.length === 0 ? (

@@ -1079,6 +1079,7 @@ import DeleteLeadModal from './deletelead'; // Asumsi deletelead.tsx mengekspor 
 import { LeadDatas, ContactOption, ProductOption } from '@/components/Leads/types';
 import TableRowTransactionLead from '@/components/Tabel/TabelRowLeads';
 import BoardHeader from './boardheader'; // Asumsi komponen ini ada
+import { Breadcrumbs } from '../../components/breadcrumbs';
 import { usePage, router, useForm, Head } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
@@ -1290,6 +1291,15 @@ const LeadsIndex: React.FC = () => {
                     products={products}
                     columns={columns}
                 />
+                <div className="px-6 pt-3">
+                    <Breadcrumbs
+                        breadcrumbs={[
+                            { title: 'Dashboard', href: '/dashboard' },
+                            { title: 'Manage Leads', href: '/kanban' },
+                            { title: 'List', href: '/kanban/list' },
+                        ]}
+                    />
+                </div>
                 <main className="flex-1 p-6 pt-1 p-3">
                     <div className="bg-white rounded-xl shadow-md overflow-hidden">
                         {filteredLeads.length === 0 ? (

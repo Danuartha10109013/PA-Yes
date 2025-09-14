@@ -7,6 +7,7 @@ import DeleteLeadModal from '../Kanban/deletelead';
 import { LeadDatas as LeadType } from '@/components/Leads/types';
 import TableRowTransactionLead from '@/components/Tabel/TabelRowLeads';
 import BoardHeader from '../Kanban/boardheader';
+import { Breadcrumbs } from '../../components/breadcrumbs';
 
 const ArsipLeads: React.FC = () => {
     // State untuk data arsip
@@ -281,6 +282,14 @@ const ArsipLeads: React.FC = () => {
 
                 <div className="flex flex-col flex-1 overflow-hidden">
                 <BoardHeader />
+                <div className="px-6 pt-3">
+                    <Breadcrumbs
+                        breadcrumbs={[
+                            { title: 'Dashboard', href: '/dashboard' },
+                            { title: 'Leads', href: '/leads' },
+                        ]}
+                    />
+                </div>
                 <main className="flex-1 p-6 pt-1 p-3">
                     <div className="bg-white rounded-xl shadow-md overflow-hidden">
                         {loading ? (

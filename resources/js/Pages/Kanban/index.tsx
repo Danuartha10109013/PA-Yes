@@ -1213,6 +1213,7 @@ import AddLeadModal from './addlead';
 import DeleteLeadModal from './deletelead';
 import BoardHeader from './boardheader';
 import EditColumnModal from './EditColumnModal';
+import { Breadcrumbs } from '../../components/breadcrumbs';
 import Swal from 'sweetalert2';
 
 // Helper function untuk safe JSON parsing
@@ -1282,6 +1283,44 @@ const BoardView: React.FC = () => {
             return 'Kanban Board - Tappp';
         }
         return 'Leads - Tappp';
+    };
+
+    const getCurrentViewBreadcrumb = () => {
+        if (url.includes('/list/leads')) {
+            if (url.includes('show=arsip')) {
+                if (url.includes('filter=dealing')) {
+                    return 'Dealing';
+                } else if (url.includes('filter=junk')) {
+                    return 'Junk';
+                } else {
+                    return 'Arsip';
+                }
+            } else {
+                return 'List';
+            }
+        } else if (url.includes('/kanban/leads')) {
+            return 'Board';
+        }
+        return 'Board';
+    };
+
+    const getCurrentViewUrl = () => {
+        if (url.includes('/list/leads')) {
+            if (url.includes('show=arsip')) {
+                if (url.includes('filter=dealing')) {
+                    return '/kanban/leads?filter=dealing';
+                } else if (url.includes('filter=junk')) {
+                    return '/kanban/leads?filter=junk';
+                } else {
+                    return '/kanban/arsip';
+                }
+            } else {
+                return '/kanban/list';
+            }
+        } else if (url.includes('/kanban/leads')) {
+            return '/kanban';
+        }
+        return '/kanban';
     };
 
     useEffect(() => {
@@ -1504,6 +1543,15 @@ const BoardView: React.FC = () => {
                         products={products}
                         columns={columns.map(c => ({ id: c.id, name: c.title }))}
                     />
+                    <div className="px-6 pt-3">
+                        <Breadcrumbs
+                            breadcrumbs={[
+                                { title: 'Dashboard', href: '/dashboard' },
+                                { title: 'Manage Leads', href: '/kanban' },
+                                { title: getCurrentViewBreadcrumb(), href: getCurrentViewUrl() },
+                            ]}
+                        />
+                    </div>
                     <div className="flex space-x-4 overflow-x-auto p-3">
                         {columns.map(column => {
                             const isExcluded = excludedColumnIds.has(column.id);

@@ -2,6 +2,7 @@ import MySidebar from '../Layout/Sidebar';
 import DashboardCard from '@/components/dashboard/DashboardCard';
 import RevenueChart from '@/components/dashboard/RevenueChart'; // Assuming this is a separate component for general revenue
 import WebsiteVisitors from '@/components/dashboard/WebsiteVisitors';
+import { Breadcrumbs } from '../components/breadcrumbs';
 // import SectorSalesChart from '@/components/dashboard/RevenueChart'; // Import the dedicated SectorSalesChart
 
 
@@ -140,7 +141,14 @@ const Dashboard: React.FC = () => {
                 <MySidebar />
 
                 <main className="flex-1 p-6">
-                <h1 className="text-3xl font-bold mb-6 text-gray-800">Dashboard Overview</h1>
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold mb-2 text-gray-800">Dashboard Overview</h1>
+                    <Breadcrumbs
+                        breadcrumbs={[
+                            { title: 'Dashboard', href: '/dashboard' },
+                        ]}
+                    />
+                </div>
 
                 {/* Card Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1200px] mx-auto mb-10">

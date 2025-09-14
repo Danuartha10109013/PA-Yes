@@ -411,6 +411,7 @@ import Search from '@/components/Search/search';
 import AddSectorModal from './addsector';
 import EditSectorModal from './editsector';
 import DeleteSectorModal from './deletesector';
+import { Breadcrumbs } from '../../components/breadcrumbs';
 import Swal from 'sweetalert2';
 import { Sector as SectorType, SectorData } from '@/components/Types/types';
 
@@ -533,6 +534,14 @@ const SectorsIndex: React.FC = () => {
                         <h2 className="text-[#344767] font-semibold text-lg mb-2">
                             Daftar Sektor
                         </h2>
+                        <div className="mb-2">
+                            <Breadcrumbs
+                                breadcrumbs={[
+                                    { title: 'Dashboard', href: '/dashboard' },
+                                    { title: 'Sektor', href: '/sectors' },
+                                ]}
+                            />
+                        </div>
                         <div className="flex flex-col md:flex-row justify-between gap-4">
                             <Search
                                 searchQuery={searchQuery}
