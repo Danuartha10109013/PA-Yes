@@ -1295,7 +1295,7 @@ const LeadsIndex: React.FC = () => {
                     <Breadcrumbs
                         breadcrumbs={[
                             { title: 'Dashboard', href: '/dashboard' },
-                            { title: 'Manage Leads', href: '/kanban' },
+                            { title: 'Manage Leads', href: '/kanban/leads' },
                             { title: 'List', href: '/kanban/list' },
                         ]}
                     />
