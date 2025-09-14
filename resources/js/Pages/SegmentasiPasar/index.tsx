@@ -346,7 +346,7 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            {(mode === 'arsip' || url.includes('show=arsip')) && (
+                            {/* {(mode === 'arsip' || url.includes('show=arsip')) && (
                                 <button
                                     onClick={() => {
                                         const pathname = window.location.pathname;
@@ -359,7 +359,7 @@ const SegmentasiPasarList: React.FC<Props> = () => {
                                     <i className="fas fa-times"></i>
                                     Tutup Arsip
                                 </button>
-                            )}
+                            )} */}
                             {/* Manual Refresh Button */}
                             <button
                                 onClick={refreshData}

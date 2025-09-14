@@ -1080,12 +1080,13 @@ import { LeadDatas, ContactOption, ProductOption } from '@/components/Leads/type
 import TableRowTransactionLead from '@/components/Tabel/TabelRowLeads';
 import BoardHeader from './boardheader'; // Asumsi komponen ini ada
 import { Breadcrumbs } from '../../components/breadcrumbs';
+import LeadDetailDrawer from './detaillead';
 import { usePage, router, useForm, Head } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
 // Interface untuk respons setelah membuat lead baru, jika ada.
 // Meskipun router.reload biasanya akan me-refresh semua data.
-interface CreateLeadDataResponse extends LeadDatas { }
+interface CreateLeadDataResponse extends LeadDatas {}
 
 // Interface untuk payload data saat mengedit lead.
 // Menyesuaikan dengan data yang akan dikirim ke backend.
@@ -1122,7 +1123,7 @@ const LeadsIndex: React.FC = () => {
 
     // State untuk menyimpan daftar leads, diinisialisasi dari kanbanData
     const [leads, setLeads] = useState<LeadDatas[]>(() => {
-        const allLeads = kanbanData.flatMap(col => col.leads);
+        const allLeads = kanbanData.flatMap((col) => col.leads);
         // Urutkan berdasarkan tanggal dibuat terbaru
         return allLeads.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     });
@@ -1135,7 +1136,7 @@ const LeadsIndex: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [leadToEdit, setLeadToEdit] = useState<LeadDatas | null>(null);
     const [leadToDelete, setLeadToDelete] = useState<LeadDatas | null>(null);
-    
+
     // State untuk menentukan view yang aktif
     const { url } = usePage();
     const getCurrentViewTitle = () => {
@@ -1154,7 +1155,7 @@ const LeadsIndex: React.FC = () => {
 
     // Efek untuk memperbarui daftar leads ketika kanbanData berubah (misalnya, setelah reload Inertia)
     useEffect(() => {
-        const allLeads = kanbanData.flatMap(col => col.leads);
+        const allLeads = kanbanData.flatMap((col) => col.leads);
         setLeads(allLeads.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     }, [kanbanData]);
 
@@ -1165,10 +1166,11 @@ const LeadsIndex: React.FC = () => {
     };
 
     // Filter leads berdasarkan searchTerm
-    const filteredLeads = leads.filter(lead =>
-        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.product?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredLeads = leads.filter(
+        (lead) =>
+            lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            lead.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            lead.product?.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
     // Logika paginasi
@@ -1178,8 +1180,12 @@ const LeadsIndex: React.FC = () => {
     const totalPages = Math.ceil(filteredLeads.length / leadsPerPage);
 
     const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-    const nextPage = () => { if (currentPage < totalPages) setCurrentPage(prev => prev + 1); };
-    const prevPage = () => { if (currentPage > 1) setCurrentPage(prev => prev - 1); };
+    const nextPage = () => {
+        if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
+    };
+    const prevPage = () => {
+        if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+    };
 
     // Handler untuk menyimpan lead baru (dipicu dari BoardHeader -> AddLeadModal)
     const handleSaveNewLead = async (newlyCreatedLead: CreateLeadDataResponse) => {
@@ -1191,10 +1197,23 @@ const LeadsIndex: React.FC = () => {
                 localStorage.setItem('segmentasi_needs_refresh', 'true');
             },
             onError: (errors) => {
-                console.error("Failed to add lead:", errors);
+                console.error('Failed to add lead:', errors);
                 Swal.fire({ icon: 'error', title: 'Gagal!', text: `Gagal menambahkan lead: ${Object.values(errors).join(', ')} ` });
-            }
+            },
         });
+    };
+
+    const [leadToDetail, setLeadToDetail] = useState<LeadDatas | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    const handleOpenDetailModal = (lead: LeadDatas) => {
+        setLeadToDetail(lead);
+        setIsDetailModalOpen(true);
+    };
+
+    const handleCloseDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setLeadToDetail(null);
     };
 
     // Handler untuk membuka modal edit
@@ -1249,7 +1268,7 @@ const LeadsIndex: React.FC = () => {
     const handleDeleteModalConfirm = (leadId: string) => {
         router.delete(`/kanban/leads/${leadId}`, {
             onSuccess: () => {
-                setLeads(prev => prev.filter(l => l.id !== leadId));
+                setLeads((prev) => prev.filter((l) => l.id !== leadId));
                 Swal.fire({ icon: 'success', title: 'Lead dihapus!', timer: 1500, showConfirmButton: false });
             },
         });
@@ -1258,22 +1277,26 @@ const LeadsIndex: React.FC = () => {
 
     // Handler untuk mengubah kolom (status) lead
     const handleColumnChange = async (leadId: string, newColumnId: string) => {
-        router.put('/kanban/leads/update-column', {
-            leadId: leadId,
-            newColumnId: newColumnId,
-        }, {
-            onSuccess: () => {
-                Swal.fire({ icon: 'success', title: 'Status Lead diperbarui!', timer: 1500, showConfirmButton: false });
-                // Refresh data from server to ensure consistency
-                router.reload({ only: ['kanbanData'] });
+        router.put(
+            '/kanban/leads/update-column',
+            {
+                leadId: leadId,
+                newColumnId: newColumnId,
             },
-            onError: (errors) => {
-                console.error("Failed to update lead status:", errors);
-                Swal.fire({ icon: 'error', title: 'Gagal!', text: `Gagal memperbarui status lead: ${Object.values(errors).join(', ')} ` });
+            {
+                onSuccess: () => {
+                    Swal.fire({ icon: 'success', title: 'Status Lead diperbarui!', timer: 1500, showConfirmButton: false });
+                    // Refresh data from server to ensure consistency
+                    router.reload({ only: ['kanbanData'] });
+                },
+                onError: (errors) => {
+                    console.error('Failed to update lead status:', errors);
+                    Swal.fire({ icon: 'error', title: 'Gagal!', text: `Gagal memperbarui status lead: ${Object.values(errors).join(', ')} ` });
+                },
+                preserveScroll: true, // Pertahankan posisi scroll
+                preserveState: true, // Pertahankan state form (jika ada)
             },
-            preserveScroll: true, // Pertahankan posisi scroll
-            preserveState: true, // Pertahankan state form (jika ada)
-        });
+        );
     };
 
     return (
@@ -1281,17 +1304,17 @@ const LeadsIndex: React.FC = () => {
             <Head title={getCurrentViewTitle()} />
             <div className="flex min-h-screen">
                 <MySidebar />
-                <div className="flex flex-col flex-1 overflow-hidden">
-                {/* BoardHeader yang menerima props contacts, products, dan columns */}
-                <BoardHeader
-                    onSave={handleSaveNewLead}
-                    searchTerm={searchTerm}
-                    onSearchChange={handleSearchChange}
-                    contacts={contacts}
-                    products={products}
-                    columns={columns}
-                />
-                <div className="px-6 pt-3">
+                <div className="flex flex-1 flex-col overflow-hidden">
+                    {/* BoardHeader yang menerima props contacts, products, dan columns */}
+                    <BoardHeader
+                        onSave={handleSaveNewLead}
+                        searchTerm={searchTerm}
+                        onSearchChange={handleSearchChange}
+                        contacts={contacts}
+                        products={products}
+                        columns={columns}
+                    />
+                    {/* <div className="px-6 pt-3">
                     <Breadcrumbs
                         breadcrumbs={[
                             { title: 'Dashboard', href: '/dashboard' },
@@ -1299,100 +1322,110 @@ const LeadsIndex: React.FC = () => {
                             { title: 'List', href: '/kanban/list' },
                         ]}
                     />
-                </div>
-                <main className="flex-1 p-6 pt-1 p-3">
-                    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                        {filteredLeads.length === 0 ? (
-                            <p className="p-4 text-center text-gray-500">Tidak ada lead yang cocok dengan pencarian Anda.</p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full border-separate border-spacing-y-2">
-                                    <thead>
-                                        <tr className="text-xs font-semibold text-[#98A2B3]">
-                                            <th className="text-left pl-6 py-2">NAMA</th>
-                                            <th className="text-left py-2">PERUSAHAAN</th>
-                                            <th className="text-left py-2">PRODUCT</th>
-                                            <th className="text-left py-2">DEADLINE</th>
-                                            <th className="text-left py-2">SECTOR</th>
-                                            <th className="text-left py-2">CREATED AT</th>
-                                            <th className="text-left py-2">UPDATED AT</th>
-                                            <th className="py-2 pr-6 text-right">STATUS</th>
-                                            <th className="py-2 pr-6 text-right">ACTIONS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-sm text-[#344767]">
-                                        {currentLeads.map((lead) => (
-                                            <TableRowTransactionLead
-                                                key={lead.id}
-                                                lead={lead}
-                                                onEdit={handleOpenEditModal}
-                                                onDelete={handleOpenDeleteModal}
-                                                onDetail={() => { /* Implementasi detail view logic di sini jika diperlukan */ }}
-                                                onColumnChange={handleColumnChange}
-                                                columns={columns}
-                                            />
-                                        ))}
-                                    </tbody>
-                                </table>
+                </div> */}
+                    <main className="flex-1 p-3 p-6 pt-1">
+                        <div className="overflow-hidden rounded-xl bg-white shadow-md">
+                            {filteredLeads.length === 0 ? (
+                                <p className="p-4 text-center text-gray-500">Tidak ada lead yang cocok dengan pencarian Anda.</p>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full border-separate border-spacing-y-2">
+                                        <thead>
+                                            <tr className="text-xs font-semibold text-[#98A2B3]">
+                                                <th className="py-2 pl-6 text-left">NAMA</th>
+                                                <th className="py-2 text-left">PERUSAHAAN</th>
+                                                <th className="py-2 text-left">PRODUCT</th>
+                                                <th className="py-2 text-left">DEADLINE</th>
+                                                <th className="py-2 text-left">SECTOR</th>
+                                                <th className="py-2 text-left">CREATED AT</th>
+                                                <th className="py-2 text-left">UPDATED AT</th>
+                                                <th className="py-2 pr-6 text-right">STATUS</th>
+                                                <th className="py-2 pr-6 text-right">ACTIONS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="text-sm text-[#344767]">
+                                            {currentLeads.map((lead) => (
+                                                <TableRowTransactionLead
+                                                    key={lead.id}
+                                                    lead={lead}
+                                                    onEdit={handleOpenEditModal}
+                                                    onDelete={handleOpenDeleteModal}
+                                                    onDetail={handleOpenDetailModal} // ✅ sekarang dipanggil
+                                                    onColumnChange={handleColumnChange}
+                                                    columns={columns}
+                                                />
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Kontrol Paginasi */}
+                        {filteredLeads.length > leadsPerPage && (
+                            <div className="mt-6 flex items-center justify-center space-x-2">
+                                <button
+                                    onClick={prevPage}
+                                    disabled={currentPage === 1}
+                                    className="rounded-lg bg-white px-4 py-2 text-gray-700 shadow-md hover:bg-gray-200 disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+                                {[...Array(totalPages)].map((_, index) => (
+                                    <button
+                                        key={index + 1}
+                                        onClick={() => paginate(index + 1)}
+                                        className={`px - 4 py - 2 - lg - md rounded shadow ${currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-200'} `}
+                                    >
+                                        {index + 1}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={nextPage}
+                                    disabled={currentPage === totalPages}
+                                    className="rounded-lg bg-white px-4 py-2 text-gray-700 shadow-md hover:bg-gray-200 disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
                             </div>
                         )}
-                    </div>
+                    </main>
+                </div>
 
-                    {/* Kontrol Paginasi */}
-                    {filteredLeads.length > leadsPerPage && (
-                        <div className="flex justify-center items-center mt-6 space-x-2">
-                            <button onClick={prevPage} disabled={currentPage === 1} className="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-200 disabled:opacity-50">
-                                Previous
-                            </button>
-                            {[...Array(totalPages)].map((_, index) => (
-                                <button
-                                    key={index + 1}
-                                    onClick={() => paginate(index + 1)}
-                                    className={`px - 4 py - 2 rounded - lg shadow - md ${currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-200'} `}
-                                >
-                                    {index + 1}
-                                </button>
-                            ))}
-                            <button onClick={nextPage} disabled={currentPage === totalPages} className="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-200 disabled:opacity-50">
-                                Next
-                            </button>
-                        </div>
-                    )}
-                </main>
+                {/* Modal Edit Lead, menerima props contacts dan products */}
+                {leadToEdit && (
+                    <EditLeadModal
+                        isOpen={isEditModalOpen}
+                        onClose={handleCloseEditModal}
+                        onSave={handleSaveEditedLead}
+                        initialData={leadToEdit}
+                        isSubmitting={router.processing}
+                        contacts={contacts}
+                        products={products}
+                        columns={columns} // Juga pass columns ke EditLeadModal
+                    />
+                )}
+
+                {/* Modal Delete Lead */}
+                {isDeleteModalOpen && leadToDelete && (
+                    // <DeleteLeadModal
+                    //     isOpen={isDeleteModalOpen}
+                    //     onClose={handleCloseDeleteModal}
+                    //     onDelete={handleDeleteLeadConfirmed}
+                    //     lead={leadToDelete}
+                    //     isSubmitting={router.processing}
+                    // />
+                    <DeleteLeadModal
+                        isOpen={isDeleteModalOpen}
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onDelete={handleDeleteModalConfirm}
+                        lead={leadToDelete}
+                    />
+                )}
+
+                {leadToDetail && <LeadDetailDrawer isOpen={isDetailModalOpen} onClose={handleCloseDetailModal} lead={leadToDetail} />}
             </div>
-
-            {/* Modal Edit Lead, menerima props contacts dan products */}
-            {leadToEdit && (
-                <EditLeadModal
-                    isOpen={isEditModalOpen}
-                    onClose={handleCloseEditModal}
-                    onSave={handleSaveEditedLead}
-                    initialData={leadToEdit}
-                    isSubmitting={router.processing}
-                    contacts={contacts}
-                    products={products}
-                    columns={columns} // Juga pass columns ke EditLeadModal
-                />
-            )}
-
-            {/* Modal Delete Lead */}
-            {isDeleteModalOpen && leadToDelete && (
-                // <DeleteLeadModal
-                //     isOpen={isDeleteModalOpen}
-                //     onClose={handleCloseDeleteModal}
-                //     onDelete={handleDeleteLeadConfirmed}
-                //     lead={leadToDelete}
-                //     isSubmitting={router.processing}
-                // />
-                <DeleteLeadModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onDelete={handleDeleteModalConfirm}
-                    lead={leadToDelete}
-                />
-            )}
-        </div>
-    </>
+        </>
     );
 };
 

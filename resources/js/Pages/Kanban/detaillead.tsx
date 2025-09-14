@@ -271,7 +271,7 @@ const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ isOpen, onClose, le
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-gray-700">
                         {/* Nama Lead */}
                         <div>
-                            <p className={labelClasses}>Nama Lead</p>
+                            <p className={labelClasses}>Namag Lead</p>
                             <p className={`${inputDisplayClasses} font-medium`}>{lead.name}</p>
                         </div>
 
@@ -295,7 +295,7 @@ const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ isOpen, onClose, le
                         <div className="col-span-2">
                             <p className={labelClasses}>Sosial Media</p>
                             {socialList.length > 0 ? (
-                                <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+                                <ul className="list-inside list-disc pl-2 text-sm text-gray-700">
                                     {socialList.map((item, index) => (
                                         <li key={index}>{item}</li>
                                     ))}
@@ -307,7 +307,7 @@ const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ isOpen, onClose, le
                         <div className="col-span-2">
                             <p className={labelClasses}>Alamat</p>
                             {addressList.length > 0 ? (
-                                <ul className="list-disc list-inside text-sm text-gray-700 pl-2">
+                                <ul className="list-inside list-disc pl-2 text-sm text-gray-700">
                                     {addressList.map((item, index) => (
                                         <li key={index}>{item}</li>
                                     ))}

@@ -1211,6 +1211,7 @@ import { LeadDatas, ColumnData, ContactOption, ProductOption } from '@/component
 import MySidebar from '../../Layout/Sidebar';
 import AddLeadModal from './addlead';
 import DeleteLeadModal from './deletelead';
+import DetailLeadModal from './detaillead';
 import BoardHeader from './boardheader';
 import EditColumnModal from './EditColumnModal';
 import { Breadcrumbs } from '../../components/breadcrumbs';
@@ -1246,7 +1247,6 @@ const BoardView: React.FC = () => {
         setProducts(productsFromPage as ProductOption[]);
     }, [contactsFromPage, productsFromPage]);
 
-
     const [columns, setColumns] = useState<ColumnData[]>([]);
     const [leads, setLeads] = useState<LeadDatas[]>([]);
     const [draggedLead, setDraggedLead] = useState<LeadDatas | null>(null);
@@ -1258,12 +1258,12 @@ const BoardView: React.FC = () => {
     // State untuk AddLeadModal utama di BoardView
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
     const [addLeadInitialColumnId, setAddLeadInitialColumnId] = useState<string>('');
-    
+
     // (Removed) AddColumnModal state
     // State untuk EditColumnModal
     const [isEditColumnModalOpen, setIsEditColumnModalOpen] = useState(false);
     const [columnToEdit, setColumnToEdit] = useState<ColumnData | null>(null);
-    
+
     // State untuk menentukan view yang aktif
     const { url } = usePage();
     const getCurrentViewTitle = () => {
@@ -1336,18 +1336,20 @@ const BoardView: React.FC = () => {
     useEffect(() => {
         if (kanbanData && Array.isArray(kanbanData)) {
             console.log('✅ Processing kanbanData:', kanbanData);
-            
-            setColumns(kanbanData.map((col: any) => ({
-                id: col.id,
-                title: col.title,
-                bgColor: col.bgColor || 'bg-gray-100',
-                borderColor: col.borderColor || 'border-gray-300',
-                titleColor: col.titleColor || 'text-gray-600',
-                dotBorderColor: col.dotBorderColor || 'border-gray-400',
-                dotBgColor: col.dotBgColor || 'bg-transparent',
-                dotTextColor: col.dotTextColor || 'text-gray-400',
-                addLeadColor: col.addLeadColor || 'text-gray-700',
-            })));
+
+            setColumns(
+                kanbanData.map((col: any) => ({
+                    id: col.id,
+                    title: col.title,
+                    bgColor: col.bgColor || 'bg-gray-100',
+                    borderColor: col.borderColor || 'border-gray-300',
+                    titleColor: col.titleColor || 'text-gray-600',
+                    dotBorderColor: col.dotBorderColor || 'border-gray-400',
+                    dotBgColor: col.dotBgColor || 'bg-transparent',
+                    dotTextColor: col.dotTextColor || 'text-gray-400',
+                    addLeadColor: col.addLeadColor || 'text-gray-700',
+                })),
+            );
 
             const allLeads: LeadDatas[] = kanbanData.flatMap((col: any) => {
                 console.log(`✅ Processing column ${col.title}:`, col.leads);
@@ -1356,13 +1358,10 @@ const BoardView: React.FC = () => {
                     columnId: lead.columnId || col.id,
 
                     // ✅ Perbaikan: parse jika bentuk string JSON
-                    social_media: typeof lead.social_media === 'string'
-                        ? (safeJsonParse(lead.social_media) ?? lead.social_media)
-                        : (lead.social_media ?? null),
+                    social_media:
+                        typeof lead.social_media === 'string' ? (safeJsonParse(lead.social_media) ?? lead.social_media) : (lead.social_media ?? null),
 
-                    address: typeof lead.address === 'string'
-                        ? (safeJsonParse(lead.address) ?? lead.address)
-                        : (lead.address ?? null),
+                    address: typeof lead.address === 'string' ? (safeJsonParse(lead.address) ?? lead.address) : (lead.address ?? null),
                 }));
             });
 
@@ -1399,27 +1398,27 @@ const BoardView: React.FC = () => {
 
         const originalLead = draggedLead;
 
-        setLeads(prev => prev.map(lead =>
-            lead.id === originalLead.id ? { ...lead, columnId: targetColumnId } : lead
-        ));
+        setLeads((prev) => prev.map((lead) => (lead.id === originalLead.id ? { ...lead, columnId: targetColumnId } : lead)));
 
-        router.put('/kanban/leads/update-column', {
-            leadId: originalLead.id,
-            newColumnId: targetColumnId,
-        }, {
-            onSuccess: () => {
-                Swal.fire({ icon: 'success', title: 'Lead dipindahkan!', timer: 1500, showConfirmButton: false });
-                // Refresh data from server to ensure consistency
-                router.reload({ only: ['kanbanData'] });
-                // Trigger refresh untuk Segmentasi Pasar
-                localStorage.setItem('segmentasi_needs_refresh', 'true');
+        router.put(
+            '/kanban/leads/update-column',
+            {
+                leadId: originalLead.id,
+                newColumnId: targetColumnId,
             },
-            onError: () => {
-                setLeads(prev => prev.map(lead =>
-                    lead.id === originalLead.id ? { ...lead, columnId: originalLead.columnId } : lead
-                ));
-            }
-        });
+            {
+                onSuccess: () => {
+                    Swal.fire({ icon: 'success', title: 'Lead dipindahkan!', timer: 1500, showConfirmButton: false });
+                    // Refresh data from server to ensure consistency
+                    router.reload({ only: ['kanbanData'] });
+                    // Trigger refresh untuk Segmentasi Pasar
+                    localStorage.setItem('segmentasi_needs_refresh', 'true');
+                },
+                onError: () => {
+                    setLeads((prev) => prev.map((lead) => (lead.id === originalLead.id ? { ...lead, columnId: originalLead.columnId } : lead)));
+                },
+            },
+        );
     };
 
     // Fungsi ini akan dipanggil oleh BoardHeader dan LeadColumn untuk membuka modal utama
@@ -1434,7 +1433,7 @@ const BoardView: React.FC = () => {
     };
 
     const handleSaveNewLead = (newLead: LeadDatas) => {
-        setLeads(prev => [...prev, newLead]);
+        setLeads((prev) => [...prev, newLead]);
         // Trigger refresh untuk Segmentasi Pasar
         localStorage.setItem('segmentasi_needs_refresh', 'true');
     };
@@ -1468,18 +1467,22 @@ const BoardView: React.FC = () => {
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Duplicate',
-            cancelButtonText: 'Cancel'
+            cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
-                router.post(`/columns/${column.id}/duplicate`, {}, {
-                    onSuccess: () => {
-                        Swal.fire('Success!', 'Column duplicated successfully.', 'success');
-                        router.reload({ only: ['kanbanData'] });
+                router.post(
+                    `/columns/${column.id}/duplicate`,
+                    {},
+                    {
+                        onSuccess: () => {
+                            Swal.fire('Success!', 'Column duplicated successfully.', 'success');
+                            router.reload({ only: ['kanbanData'] });
+                        },
+                        onError: (errors) => {
+                            Swal.fire('Error!', Object.values(errors).join(', '), 'error');
+                        },
                     },
-                    onError: (errors) => {
-                        Swal.fire('Error!', Object.values(errors).join(', '), 'error');
-                    }
-                });
+                );
             }
         });
     };
@@ -1489,7 +1492,7 @@ const BoardView: React.FC = () => {
     const handleDeleteModalConfirm = (leadId: string) => {
         router.delete(`/kanban/leads/${leadId}`, {
             onSuccess: () => {
-                setLeads(prev => prev.filter(l => l.id !== leadId));
+                setLeads((prev) => prev.filter((l) => l.id !== leadId));
                 Swal.fire({ icon: 'success', title: 'Lead dihapus!', timer: 1500, showConfirmButton: false });
             },
         });
@@ -1504,46 +1507,42 @@ const BoardView: React.FC = () => {
         const name = lead.name ?? '';
         const companyName = lead.company_name ?? '';
         const trx = lead.trx ?? '';
-        const productName = typeof lead.product === 'string'
-            ? lead.product
-            : (lead as any).product?.name ?? '';
+        const productName = typeof lead.product === 'string' ? lead.product : ((lead as any).product?.name ?? '');
 
-        return [name, companyName, trx, productName]
-            .some(field => field.toLowerCase().includes(searchTerm.toLowerCase()));
+        return [name, companyName, trx, productName].some((field) => field.toLowerCase().includes(searchTerm.toLowerCase()));
     });
 
     // Exclude columns JUNK and DEALING and any leads inside them
     const excludedColumnIds = useMemo(() => {
         return new Set(
             columns
-                .filter(c => {
+                .filter((c) => {
                     const title = (c.title || '').toString().trim().toUpperCase();
                     return title === 'JUNK' || title === 'DEALING';
                 })
-                .map(c => c.id)
+                .map((c) => c.id),
         );
     }, [columns]);
 
     const visibleLeads = useMemo(() => {
-        return filteredLeads.filter(l => !excludedColumnIds.has(l.columnId));
+        return filteredLeads.filter((l) => !excludedColumnIds.has(l.columnId));
     }, [filteredLeads, excludedColumnIds]);
-
 
     return (
         <>
             <Head title={getCurrentViewTitle()} />
             <div className="flex h-screen overflow-hidden">
                 <MySidebar />
-                <div className="flex flex-col flex-1 overflow-hidden">
+                <div className="flex flex-1 flex-col overflow-hidden">
                     <BoardHeader
                         onSave={handleSaveNewLead}
                         searchTerm={searchTerm}
                         onSearchChange={(e) => setSearchTerm(e.target.value)}
                         contacts={contacts}
                         products={products}
-                        columns={columns.map(c => ({ id: c.id, name: c.title }))}
+                        columns={columns.map((c) => ({ id: c.id, name: c.title }))}
                     />
-                    <div className="px-6 pt-3">
+                    {/* <div className="px-6 pt-3">
                         <Breadcrumbs
                             breadcrumbs={[
                                 { title: 'Dashboard', href: '/dashboard' },
@@ -1551,11 +1550,11 @@ const BoardView: React.FC = () => {
                                 { title: getCurrentViewBreadcrumb(), href: getCurrentViewUrl() },
                             ]}
                         />
-                    </div>
+                    </div> */}
                     <div className="flex space-x-4 overflow-x-auto p-3">
-                        {columns.map(column => {
+                        {columns.map((column) => {
                             const isExcluded = excludedColumnIds.has(column.id);
-                            const columnLeads = isExcluded ? [] : visibleLeads.filter(l => l.columnId === column.id);
+                            const columnLeads = isExcluded ? [] : visibleLeads.filter((l) => l.columnId === column.id);
                             return (
                                 <LeadColumn
                                     key={column.id}
@@ -1568,9 +1567,7 @@ const BoardView: React.FC = () => {
                                     onDrop={handleDrop}
                                     isDragOver={dragOverColumnId === column.id}
                                     onAddLead={() => openAddLeadModal(column.id)}
-                                    onEditLeadSuccess={(updated) =>
-                                        setLeads(prev => prev.map(l => l.id === updated.id ? updated : l))
-                                    }
+                                    onEditLeadSuccess={(updated) => setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))}
                                     onDeleteLead={handleDeleteLead}
                                     // Pass contacts and products to LeadColumn
                                     contacts={contacts}

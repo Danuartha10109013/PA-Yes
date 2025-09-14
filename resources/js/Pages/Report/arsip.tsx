@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MySidebar from '../../Layout/Sidebar'; // Assuming this path is correct
 import ReportControls from '../../Layout/Navbar/NavbarReport'; // Adjust path based on your project structure
+import { Breadcrumbs } from '../../components/breadcrumbs';
 
 // Define the interfaces for your data
 interface Transaction {
@@ -275,6 +276,7 @@ const ReportsList: React.FC = () => {
                         <h2 className="text-[#344767] font-semibold text-lg">
                             Daftar Laporan Transaksi
                         </h2>
+                        
                         {/* Use the reusable ReportControls component */}
                         <ReportControls
                             searchQuery={searchQuery}
@@ -283,7 +285,15 @@ const ReportsList: React.FC = () => {
                             onPrintExcel={handlePrintExcel}
                         />
                     </div>
-
+                    <div className="mt-1 mb-3">
+                        <Breadcrumbs
+                            breadcrumbs={[
+                                { title: 'Dashboard', href: '/dashboard' },
+                                { title: 'Laporan', href: '/reports-page' },
+                                { title: 'Arsip', href: '/reports-arsip' },
+                            ]}
+                        />
+                    </div>
                     <div className="bg-white rounded-xl shadow-md overflow-hidden">
                         {loading ? (
                             <p className="p-4 text-center text-gray-600">Memuat data laporan...</p>
