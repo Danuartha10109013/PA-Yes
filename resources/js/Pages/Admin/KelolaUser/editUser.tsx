@@ -5,8 +5,8 @@ import { User, UserData } from '@/components/Types/types';
 interface EditUserModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // onSave expects the full updated User object, similar to how your Product is handled
-    onSave?: (updatedUser: User) => Promise<void>;
+    // onSave expects UserData object to be sent to parent
+    onSave?: (userData: UserData) => Promise<void>;
     initialData: User; // The user data to pre-fill the form
     isSubmitting: boolean; // Control submission state from parent
 }
@@ -50,11 +50,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         }
     }, [isOpen, initialData]);
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setForm(prev => ({
+        setForm((prev) => ({
             ...prev,
             [name]: value,
         }));
@@ -88,35 +86,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         }
 
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-            const response = await fetch(`/users/${initialData.id}`, { // Use /api/users for consistency
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                // Handle validation errors from Laravel
-                if (response.status === 422 && errData.errors) {
-                    const messages = Object.values(errData.errors).flat().join('\n');
-                    throw new Error(messages);
-                }
-                throw new Error(errData.message || 'Gagal menyimpan perubahan pengguna.');
-            }
-
-            const { user: updatedUser }: { user: User } = await response.json();
-
             if (onSave) {
-                await onSave(updatedUser); // Call the onSave prop with the updated user data
+                await onSave(payload); // Call the onSave prop with the UserData
             }
-
-            onClose(); // Close the modal on success
         } catch (err: any) {
             setError(err.message || 'Terjadi kesalahan saat memperbarui pengguna.');
         }
@@ -134,59 +106,67 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             cancelLabel="Batal"
         >
             <div className="max-h-[80vh] overflow-y-auto pr-2">
-                {error && <div className="text-red-500 mb-4">{error}</div>}
+                {error && <div className="mb-4 text-red-500">{error}</div>}
 
                 <div className="grid grid-cols-1 gap-4">
                     <div>
-                        <label htmlFor="name" className="block font-semibold">Nama *</label>
+                        <label htmlFor="name" className="block font-semibold">
+                            Nama *
+                        </label>
                         <input
                             type="text"
                             id="name"
                             name="name"
                             value={form.name}
                             onChange={handleChange}
-                            className="w-full border rounded px-3 py-2"
+                            className="w-full rounded border px-3 py-2"
                             required
                             disabled={isSubmitting}
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="email" className="block font-semibold">Email *</label>
+                        <label htmlFor="email" className="block font-semibold">
+                            Email *
+                        </label>
                         <input
                             type="email"
                             id="email"
                             name="email"
                             value={form.email}
                             onChange={handleChange}
-                            className="w-full border rounded px-3 py-2"
+                            className="w-full rounded border px-3 py-2"
                             required
                             disabled={isSubmitting}
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="block font-semibold">Password (Kosongkan jika tidak ingin diubah)</label>
+                        <label htmlFor="password" className="block font-semibold">
+                            Password (Kosongkan jika tidak ingin diubah)
+                        </label>
                         <input
                             type="password"
                             id="password"
                             name="password"
                             value={form.password}
                             onChange={handleChange}
-                            className="w-full border rounded px-3 py-2"
+                            className="w-full rounded border px-3 py-2"
                             // Password is not required for update
                             disabled={isSubmitting}
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="role" className="block font-semibold">Peran *</label>
+                        <label htmlFor="role" className="block font-semibold">
+                            Peran *
+                        </label>
                         <select
                             id="role"
                             name="role"
                             value={form.role}
                             onChange={handleChange}
-                            className="w-full border rounded px-3 py-2"
+                            className="w-full rounded border px-3 py-2"
                             required
                             disabled={isSubmitting}
                         >

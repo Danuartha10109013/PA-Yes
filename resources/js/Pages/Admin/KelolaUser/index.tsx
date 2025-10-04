@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import MySidebar from '../../../Layout/SidebarAdmin';
 import AddUserModal from './addUser';
 import EditUserModal from './editUser';
@@ -27,7 +27,17 @@ const UsersIndex: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/users');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            const response = await fetch('/users', {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+                },
+            });
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -54,8 +64,12 @@ const UsersIndex: React.FC = () => {
     const totalPages = Math.ceil(users.length / usersPerPage);
 
     const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-    const nextPage = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
-    const prevPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
+    const nextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
+    const prevPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
 
     // --- Add User Handlers ---
     const handleOpenAddModal = () => setIsAddModalOpen(true);
@@ -63,46 +77,57 @@ const UsersIndex: React.FC = () => {
 
     const handleSaveNewUser = async (newUserData: UserData) => {
         setIsSubmitting(true);
+        setError(null);
+
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-            const response = await fetch('/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+            router.post('/users', newUserData as any, {
+                onSuccess: () => {
+                    fetchUsers();
+                    setCurrentPage(1);
+                    handleCloseAddModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Pengguna baru berhasil ditambahkan',
+                        timer: 3000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end',
+                        background: '#10B981',
+                        color: '#ffffff',
+                        iconColor: '#ffffff',
+                    });
                 },
-                body: JSON.stringify(newUserData),
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat().join(', ');
+                    setError(`Gagal menambahkan pengguna: ${errorMessage}`);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menambahkan Pengguna',
+                        text: errorMessage,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#EF4444',
+                        background: '#ffffff',
+                        color: '#374151',
+                    });
+                    console.error('Error adding user:', errors);
+                },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                },
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('User created:', result.user);
-
-            await fetchUsers();
-            setCurrentPage(1);
-            await Swal.fire({
-                icon: 'success',
-                title: 'User baru berhasil ditambahkan!',
-                timer: 2000,
-                showConfirmButton: false,
-            });
-            handleCloseAddModal();
         } catch (err: any) {
             setError(`Gagal menambahkan pengguna: ${err.message}`);
-            await Swal.fire({
+            Swal.fire({
                 icon: 'error',
-                title: 'Gagal menambahkan pengguna',
+                title: 'Gagal Menambahkan Pengguna',
                 text: err.message,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#EF4444',
+                background: '#ffffff',
+                color: '#374151',
             });
             console.error('Error adding user:', err);
-            throw err;
-        } finally {
             setIsSubmitting(false);
         }
     };
@@ -120,46 +145,60 @@ const UsersIndex: React.FC = () => {
 
     const handleSaveEditedUser = async (updatedUserData: UserData) => {
         setIsSubmitting(true);
+        setError(null);
+
         try {
             if (!userToEdit) {
-                throw new Error("Pengguna untuk diedit tidak ditemukan.");
+                throw new Error('Pengguna untuk diedit tidak ditemukan.');
             }
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-            const response = await fetch(`/users/${userToEdit.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+            router.put(`/users/${userToEdit.id}`, updatedUserData as any, {
+                onSuccess: () => {
+                    fetchUsers();
+                    handleCloseEditModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Data pengguna berhasil diperbarui',
+                        timer: 3000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end',
+                        background: '#10B981',
+                        color: '#ffffff',
+                        iconColor: '#ffffff',
+                    });
                 },
-                body: JSON.stringify(updatedUserData),
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat().join(', ');
+                    setError(`Gagal memperbarui pengguna: ${errorMessage}`);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Memperbarui Pengguna',
+                        text: errorMessage,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#EF4444',
+                        background: '#ffffff',
+                        color: '#374151',
+                    });
+                    console.error('Error saving edited user:', errors);
+                },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                },
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }
-
-            await fetchUsers();
-            await Swal.fire({
-                icon: 'success',
-                title: 'User berhasil diperbarui!',
-                timer: 2000,
-                showConfirmButton: false,
-            });
-
-            handleCloseEditModal();
         } catch (err: any) {
-            await Swal.fire({
+            setError(`Gagal memperbarui pengguna: ${err.message}`);
+            Swal.fire({
                 icon: 'error',
-                title: 'Gagal memperbarui user',
+                title: 'Gagal Memperbarui Pengguna',
                 text: err.message,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#EF4444',
+                background: '#ffffff',
+                color: '#374151',
             });
-
             console.error('Error saving edited user:', err);
-            throw err;
-        } finally {
             setIsSubmitting(false);
         }
     };
@@ -186,48 +225,53 @@ const UsersIndex: React.FC = () => {
         }
 
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-            const response = await fetch(`/users/${userToDelete.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+            router.delete(`/users/${userToDelete.id}`, {
+                onSuccess: () => {
+                    fetchUsers();
+                    handleCloseDeleteModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Pengguna berhasil dihapus',
+                        timer: 3000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end',
+                        background: '#10B981',
+                        color: '#ffffff',
+                        iconColor: '#ffffff',
+                    });
+                },
+                onError: (errors) => {
+                    const errorMessage = Object.values(errors).flat().join(', ');
+                    setError(errorMessage || 'Terjadi kesalahan saat menghapus pengguna.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menghapus Pengguna',
+                        text: errorMessage,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#EF4444',
+                        background: '#ffffff',
+                        color: '#374151',
+                    });
+                    console.error('Error saat hapus pengguna:', errors);
+                },
+                onFinish: () => {
+                    setIsSubmitting(false);
                 },
             });
-
-            if (!response.ok) {
-                let errData = null;
-                try {
-                    errData = await response.json();
-                } catch {
-                    // response is not JSON, ignore
-                }
-                throw new Error(errData?.message || 'Gagal menghapus pengguna.');
-            }
-
-            console.log('Hapus pengguna berhasil.');
-
-            await fetchUsers();
-            await Swal.fire({
-                icon: 'success',
-                title: 'User berhasil dihapus!',
-                timer: 2000,
-                showConfirmButton: false,
-            });
-
-            handleCloseDeleteModal();
         } catch (err: any) {
             setError(err.message || 'Terjadi kesalahan saat menghapus pengguna.');
-            await Swal.fire({
+            Swal.fire({
                 icon: 'error',
-                title: 'Gagal menghapus user',
+                title: 'Gagal Menghapus Pengguna',
                 text: err.message,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#EF4444',
+                background: '#ffffff',
+                color: '#374151',
             });
-
             console.error('Error saat hapus pengguna:', err);
-        } finally {
             setIsSubmitting(false);
         }
     };
@@ -250,219 +294,213 @@ const UsersIndex: React.FC = () => {
             <div className="flex min-h-screen">
                 <MySidebar />
 
-                <main className="flex-1 p-4 md:p-6 overflow-hidden">
-                <div className="max-w-7xl mx-auto">
-                    {/* Header */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <div className="flex flex-col">
-                            <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
-                                Daftar Pengguna
-                            </h2>
-                            <div className="mt-1">
-                                <Breadcrumbs
-                                    breadcrumbs={[
-                                        { title: 'Dashboard', href: '/dashboard' },
-                                        { title: 'Kelola User', href: '/admin/kelola-user' },
-                                    ]}
-                                />
+                <main className="flex-1 overflow-hidden p-4 md:p-6">
+                    <div className="mx-auto max-w-7xl">
+                        {/* Header */}
+                        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                            <div className="flex flex-col">
+                                <h2 className="text-xl font-semibold text-[#344767] md:text-2xl">Daftar Pengguna</h2>
+                                <div className="mt-1">
+                                    <Breadcrumbs
+                                        breadcrumbs={[
+                                            { title: 'Dashboard', href: '/dashboard' },
+                                            { title: 'Kelola User', href: '/admin/kelola-user' },
+                                        ]}
+                                    />
+                                </div>
                             </div>
+                            <button
+                                className="w-full rounded-lg bg-blue-600 px-4 py-2 font-bold text-white shadow-md transition duration-300 ease-in-out hover:bg-blue-700 sm:w-auto"
+                                onClick={handleOpenAddModal}
+                            >
+                                + Tambah Pengguna
+                            </button>
                         </div>
-                        <button
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out w-full sm:w-auto"
-                            onClick={handleOpenAddModal}
-                        >
-                            + Tambah Pengguna
-                        </button>
-                    </div>
 
-                    {/* Content */}
-                    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                        {loading ? (
-                            <div className="p-8 text-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                <p className="mt-2 text-gray-600">Memuat data pengguna...</p>
-                            </div>
-                        ) : error ? (
-                            <div className="p-8 text-center">
-                                <p className="text-red-500">{error}</p>
-                            </div>
-                        ) : users.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <p className="text-gray-500">Belum ada data pengguna yang ditambahkan.</p>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Desktop Table View */}
-                                <div className="hidden lg:block">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full border-separate border-spacing-y-2">
-                                            <thead>
-                                                <tr className="text-xs font-semibold text-[#98A2B3]">
-                                                    <th className="text-left pl-6 py-3">NAMA</th>
-                                                    <th className="text-left py-3">EMAIL</th>
-                                                    <th className="text-left py-3">ROLE</th>
-                                                    <th className="text-left py-3">CREATED AT</th>
-                                                    <th className="text-left py-3">UPDATED AT</th>
-                                                    <th className="py-3 pr-6 text-right">AKSI</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="text-sm text-[#344767]">
-                                                {currentUsers.map((user) => (
-                                                    <TableRowUser
-                                                        key={user.id}
-                                                        id={user.id}
-                                                        name={user.name}
-                                                        email={user.email}
-                                                        role={user.role}
-                                                        created_at={user.created_at}
-                                                        updated_at={user.updated_at}
-                                                        onEdit={() => handleOpenEditModal(user)}
-                                                        onDelete={() => handleOpenDeleteModal(user)}
-                                                    />
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                        {/* Content */}
+                        <div className="overflow-hidden rounded-xl bg-white shadow-md">
+                            {loading ? (
+                                <div className="p-8 text-center">
+                                    <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+                                    <p className="mt-2 text-gray-600">Memuat data pengguna...</p>
                                 </div>
+                            ) : error ? (
+                                <div className="p-8 text-center">
+                                    <p className="text-red-500">{error}</p>
+                                </div>
+                            ) : users.length === 0 ? (
+                                <div className="p-8 text-center">
+                                    <p className="text-gray-500">Belum ada data pengguna yang ditambahkan.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Desktop Table View */}
+                                    <div className="hidden lg:block">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full border-separate border-spacing-y-2">
+                                                <thead>
+                                                    <tr className="text-xs font-semibold text-[#98A2B3]">
+                                                        <th className="py-3 pl-6 text-left">NAMA</th>
+                                                        <th className="py-3 text-left">EMAIL</th>
+                                                        <th className="py-3 text-left">ROLE</th>
+                                                        <th className="py-3 text-left">CREATED AT</th>
+                                                        <th className="py-3 text-left">UPDATED AT</th>
+                                                        <th className="py-3 pr-6 text-right">AKSI</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="text-sm text-[#344767]">
+                                                    {currentUsers.map((user) => (
+                                                        <TableRowUser
+                                                            key={user.id}
+                                                            id={user.id}
+                                                            name={user.name}
+                                                            email={user.email}
+                                                            role={user.role}
+                                                            created_at={user.created_at}
+                                                            updated_at={user.updated_at}
+                                                            onEdit={() => handleOpenEditModal(user)}
+                                                            onDelete={() => handleOpenDeleteModal(user)}
+                                                        />
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
 
-                                {/* Mobile Card View */}
-                                <div className="lg:hidden">
-                                    <div className="p-4 space-y-4">
-                                        {currentUsers.map((user) => (
-                                            <div key={user.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <div className="flex-1">
-                                                        <h3 className="font-semibold text-[#344767] text-lg">{user.name}</h3>
-                                                        <p className="text-gray-600 text-sm">{user.email}</p>
+                                    {/* Mobile Card View */}
+                                    <div className="lg:hidden">
+                                        <div className="space-y-4 p-4">
+                                            {currentUsers.map((user) => (
+                                                <div key={user.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                                    <div className="mb-3 flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                            <h3 className="text-lg font-semibold text-[#344767]">{user.name}</h3>
+                                                            <p className="text-sm text-gray-600">{user.email}</p>
+                                                        </div>
+                                                        <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium capitalize text-blue-800">
+                                                            {user.role}
+                                                        </span>
                                                     </div>
-                                                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full capitalize">
-                                                        {user.role}
+
+                                                    <div className="mb-4 grid grid-cols-2 gap-4 text-xs text-gray-500">
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">Created:</p>
+                                                            <p>{formatDate(user.created_at)}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">Updated:</p>
+                                                            <p>{formatDate(user.updated_at)}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleOpenEditModal(user)}
+                                                            className="flex-1 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition duration-200 hover:bg-blue-700"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleOpenDeleteModal(user)}
+                                                            className="flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition duration-200 hover:bg-red-700"
+                                                        >
+                                                            Hapus
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {users.length > usersPerPage && (
+                            <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={prevPage}
+                                        disabled={currentPage === 1}
+                                        className="rounded-lg bg-white px-3 py-2 text-sm text-gray-700 shadow-md transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Sebelumnya
+                                    </button>
+
+                                    <div className="flex items-center space-x-1">
+                                        {[...Array(totalPages)].map((_, index) => {
+                                            const pageNumber = index + 1;
+                                            // Show only current page, first page, last page, and pages around current
+                                            if (
+                                                pageNumber === 1 ||
+                                                pageNumber === totalPages ||
+                                                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={pageNumber}
+                                                        onClick={() => paginate(pageNumber)}
+                                                        className={`rounded-lg px-3 py-2 text-sm shadow-md transition-colors ${
+                                                            currentPage === pageNumber
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'bg-white text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                    >
+                                                        {pageNumber}
+                                                    </button>
+                                                );
+                                            } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+                                                return (
+                                                    <span key={pageNumber} className="px-2 text-gray-500">
+                                                        ...
                                                     </span>
-                                                </div>
-                                                
-                                                <div className="grid grid-cols-2 gap-4 text-xs text-gray-500 mb-4">
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">Created:</p>
-                                                        <p>{formatDate(user.created_at)}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">Updated:</p>
-                                                        <p>{formatDate(user.updated_at)}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleOpenEditModal(user)}
-                                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-md transition duration-200"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleOpenDeleteModal(user)}
-                                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-md transition duration-200"
-                                                    >
-                                                        Hapus
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                );
+                                            }
+                                            return null;
+                                        })}
                                     </div>
+
+                                    <button
+                                        onClick={nextPage}
+                                        disabled={currentPage === totalPages}
+                                        className="rounded-lg bg-white px-3 py-2 text-sm text-gray-700 shadow-md transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Berikutnya
+                                    </button>
                                 </div>
-                            </>
+
+                                <div className="text-sm text-gray-600">
+                                    Halaman {currentPage} dari {totalPages} ({users.length} total pengguna)
+                                </div>
+                            </div>
                         )}
                     </div>
+                </main>
 
-                    {/* Pagination Controls */}
-                    {users.length > usersPerPage && (
-                        <div className="flex flex-col sm:flex-row justify-center items-center mt-6 gap-4">
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={prevPage}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                                >
-                                    Sebelumnya
-                                </button>
-                                
-                                <div className="flex items-center space-x-1">
-                                    {[...Array(totalPages)].map((_, index) => {
-                                        const pageNumber = index + 1;
-                                        // Show only current page, first page, last page, and pages around current
-                                        if (
-                                            pageNumber === 1 ||
-                                            pageNumber === totalPages ||
-                                            (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                                        ) {
-                                            return (
-                                                <button
-                                                    key={pageNumber}
-                                                    onClick={() => paginate(pageNumber)}
-                                                    className={`px-3 py-2 rounded-lg shadow-md transition-colors text-sm ${
-                                                        currentPage === pageNumber
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-white text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                                >
-                                                    {pageNumber}
-                                                </button>
-                                            );
-                                        } else if (
-                                            pageNumber === currentPage - 2 ||
-                                            pageNumber === currentPage + 2
-                                        ) {
-                                            return <span key={pageNumber} className="px-2 text-gray-500">...</span>;
-                                        }
-                                        return null;
-                                    })}
-                                </div>
-                                
-                                <button
-                                    onClick={nextPage}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                                >
-                                    Berikutnya
-                                </button>
-                            </div>
-                            
-                            <div className="text-sm text-gray-600">
-                                Halaman {currentPage} dari {totalPages} ({users.length} total pengguna)
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </main>
+                {/* Modals */}
+                <AddUserModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} onSave={handleSaveNewUser} isSubmitting={isSubmitting} />
 
-            {/* Modals */}
-            <AddUserModal
-                isOpen={isAddModalOpen}
-                onClose={handleCloseAddModal}
-                onSave={handleSaveNewUser}
-                isSubmitting={isSubmitting}
-            />
+                {userToEdit && (
+                    <EditUserModal
+                        isOpen={isEditModalOpen}
+                        onClose={handleCloseEditModal}
+                        onSave={handleSaveEditedUser}
+                        initialData={userToEdit}
+                        isSubmitting={isSubmitting}
+                    />
+                )}
 
-            {userToEdit && (
-                <EditUserModal
-                    isOpen={isEditModalOpen}
-                    onClose={handleCloseEditModal}
-                    onSave={handleSaveEditedUser}
-                    initialData={userToEdit}
-                    isSubmitting={isSubmitting}
-                />
-            )}
-
-            {isDeleteModalOpen && userToDelete && (
-                <DeleteUserModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={handleCloseDeleteModal}
-                    onDelete={handleDeleteUserConfirmed}
-                    user={userToDelete}
-                    isSubmitting={isSubmitting}
-                />
-            )}
-        </div>
-    </>
+                {isDeleteModalOpen && userToDelete && (
+                    <DeleteUserModal
+                        isOpen={isDeleteModalOpen}
+                        onClose={handleCloseDeleteModal}
+                        onDelete={handleDeleteUserConfirmed}
+                        user={userToDelete}
+                        isSubmitting={isSubmitting}
+                    />
+                )}
+            </div>
+        </>
     );
 };
 

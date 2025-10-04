@@ -8,6 +8,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash; // For hashing passwords
 use Illuminate\Support\Str;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 
 class UserController extends Controller
 {
@@ -23,7 +25,7 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         // Validate the incoming request data.
         // 'email' must be unique in the 'users' table.
@@ -47,11 +49,8 @@ class UserController extends Controller
             'role' => $request->role,
         ]);
 
-        // Return a success message and the newly created user (with sensitive fields hidden).
-        return response()->json([
-            'message' => 'Pengguna berhasil ditambahkan!',
-            'user' => $user->makeHidden(['password', 'remember_token'])
-        ], 201); // 201 Created status for successful resource creation
+        // Return a redirect response with success message
+        return Redirect::back()->with('success', 'Pengguna berhasil ditambahkan!');
     }
 
     /**
@@ -151,14 +150,14 @@ class UserController extends Controller
     //     'message' => 'Pengguna berhasil diperbarui!',
     //     'user' => $user->makeHidden(['password', 'remember_token'])
     // ]);
-    public function update(Request $request, $id)
+    public function update(Request $request, $id): RedirectResponse
     {
         // Find user explicitly to debug route model binding issues
         $user = User::find($id);
 
         if (!$user) {
             Log::error("User not found for ID: {$id}");
-            return response()->json(['message' => 'User not found'], 404);
+            return Redirect::back()->with('error', 'User not found');
         }
 
         Log::info("Updating user ID: {$user->id}");
@@ -191,20 +190,17 @@ class UserController extends Controller
 
         Log::info('User updated successfully', ['user_id' => $user->id]);
 
-        return response()->json([
-            'message' => 'Pengguna berhasil diperbarui!',
-            'user' => $user->makeHidden(['password', 'remember_token']),
-        ]);
+        return Redirect::back()->with('success', 'Pengguna berhasil diperbarui!');
     }
 
-    public function destroy($id)
+    public function destroy($id): RedirectResponse
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return Redirect::back()->with('error', 'User not found');
         }
         $user->delete();
-        return response()->json(['message' => 'Pengguna berhasil dihapus!']);
+        return Redirect::back()->with('success', 'Pengguna berhasil dihapus!');
     }
 }
 

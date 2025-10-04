@@ -1336,6 +1336,10 @@ const BoardView: React.FC = () => {
     useEffect(() => {
         if (kanbanData && Array.isArray(kanbanData)) {
             console.log('✅ Processing kanbanData:', kanbanData);
+            console.log(
+                '🔍 DEALING column data:',
+                kanbanData.find((col) => col.title === 'DEALING'),
+            );
 
             setColumns(
                 kanbanData.map((col: any) => ({
@@ -1353,6 +1357,10 @@ const BoardView: React.FC = () => {
 
             const allLeads: LeadDatas[] = kanbanData.flatMap((col: any) => {
                 console.log(`✅ Processing column ${col.title}:`, col.leads);
+                if (col.title === 'DEALING') {
+                    console.log('🔍 DEALING column leads count:', col.leads.length);
+                    console.log('🔍 DEALING column leads:', col.leads);
+                }
                 return col.leads.map((lead: any) => ({
                     ...lead,
                     columnId: lead.columnId || col.id,

@@ -958,8 +958,16 @@ public function store(Request $request): RedirectResponse
         } else {
             $query->whereIn('columns.name', ['DEALING', 'JUNK']);
         }
+    } else {
+        // Jika tidak ada show=arsip, tampilkan semua kolom kecuali DEALING dan JUNK yang sudah lebih dari 7 hari
+        $query->where(function ($q) {
+            $q->whereNotIn('columns.name', ['DEALING', 'JUNK'])
+              ->orWhere(function ($subQ) {
+                  $subQ->whereIn('columns.name', ['DEALING', 'JUNK'])
+                       ->where('transactions.updated_at', '>=', now()->subDays(7));
+              });
+        });
     }
-    // Jika tidak ada show=arsip, tampilkan semua kolom (termasuk DEALING dan JUNK)
 
     $transactions = $query->get()->map(function ($transaction) {
         $deadlineDate = $transaction->deadline
@@ -1201,6 +1209,7 @@ public function store(Request $request): RedirectResponse
             $transaction = Transaction::findOrFail($validated['leadId']);
             $oldColumnId = $transaction->column_id;
             $transaction->column_id = $validated['newColumnId'];
+            $transaction->touch(); // Force update updated_at timestamp
             $transaction->save();
 
             Log::info("✅ Transaksi ID {$transaction->id} berhasil dipindahkan dari kolom ID {$oldColumnId} ke kolom ID {$validated['newColumnId']}.");
@@ -1722,7 +1731,14 @@ public function store(Request $request): RedirectResponse
             $query->whereIn('columns.name', ['DEALING', 'JUNK']);
         }
     } else {
-        $query->whereNotIn('columns.name', ['DEALING', 'JUNK']);
+        // Tampilkan semua kolom kecuali DEALING dan JUNK yang sudah lebih dari 7 hari
+        $query->where(function ($q) {
+            $q->whereNotIn('columns.name', ['DEALING', 'JUNK'])
+              ->orWhere(function ($subQ) {
+                  $subQ->whereIn('columns.name', ['DEALING', 'JUNK'])
+                       ->where('transactions.updated_at', '>=', now()->subDays(7));
+              });
+        });
     }
 
     $transactions = $query->get()->map(function ($transaction) {
@@ -1862,7 +1878,14 @@ public function arsip(Request $request)
             $query->whereIn('columns.name', ['DEALING', 'JUNK']);
         }
     } else {
-        $query->whereNotIn('columns.name', ['DEALING', 'JUNK']);
+        // Tampilkan semua kolom kecuali DEALING dan JUNK yang sudah lebih dari 7 hari
+        $query->where(function ($q) {
+            $q->whereNotIn('columns.name', ['DEALING', 'JUNK'])
+              ->orWhere(function ($subQ) {
+                  $subQ->whereIn('columns.name', ['DEALING', 'JUNK'])
+                       ->where('transactions.updated_at', '>=', now()->subDays(7));
+              });
+        });
     }
 
     $transactions = $query->get()->map(function ($transaction) {
@@ -1963,6 +1986,7 @@ public function arsip(Request $request)
         ]);
 
         $transaction->update($validatedData);
+        $transaction->touch(); // Force update updated_at timestamp
 
         return redirect()->back()->with('message', 'Lead updated successfully');
 

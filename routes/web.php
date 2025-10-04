@@ -249,7 +249,7 @@ Route::get('/manageleads', fn() => Inertia::render('Manageleads/index'))->name('
 Route::get('/contacts-page', fn() => Inertia::render('Contact/index'))->name('contacts.page');
 Route::get('/sectors-page', fn() => Inertia::render('sector/index'))->name('sectors.page');
 Route::get('/products-page', fn() => Inertia::render('product/index'))->name('products.page');
-Route::get('/reports-page', fn() => Inertia::render('Report/index'))->name('reports.page');
+Route::get('/reports-page', fn() => Inertia::render('Report/index'))->name('reports.sales.page');
 Route::get('/reports-arsip', fn() => Inertia::render('Report/arsip'))->name('reports.arsip');
 });
 
