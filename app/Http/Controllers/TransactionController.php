@@ -969,6 +969,8 @@ public function store(Request $request): RedirectResponse
         });
     }
 
+    // dd($query);
+
     $transactions = $query->get()->map(function ($transaction) {
         $deadlineDate = $transaction->deadline
             ? Carbon::parse($transaction->deadline)->format('Y-m-d')
@@ -1037,7 +1039,7 @@ public function store(Request $request): RedirectResponse
             'leads' => $transactions->where('columnId', $column->id)->values(),
         ];
     });
-
+    // dd($transactions);
 
 
     return Inertia::render('Kanban/index', [
@@ -1141,30 +1143,7 @@ public function store(Request $request): RedirectResponse
      * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
-    // public function destroy(string $id)
-    // {
-    //     try {
-    //         $transaction = Transaction::findOrFail($id); // Use findOrFail for cleaner error handling
-
-    //         DB::beginTransaction();
-    //         // The Transaction model's `deleting` event listener will automatically log the deletion.
-    //         // Remove the manual TransactionLog::create here.
-    //         $transaction->delete(); // This will trigger the soft deleting if using SoftDeletes
-    //         DB::commit();
-
-    //         return response()->json(['message' => 'Lead deleted successfully'], 200);
-    //     } catch (ModelNotFoundException $e) {
-    //         Log::error('Lead not found for deletion:', ['id' => $id, 'error' => $e->getMessage()]);
-    //         return response()->json(['message' => 'Lead not found.', 'error' => $e->getMessage()], 404);
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         Log::error("❌ Error deleting transaction $id: " . $e->getMessage(), [
-    //             'trace' => $e->getTraceAsString(),
-    //         ]);
-    //         return response()->json(['message' => 'Failed to delete lead', 'error' => $e->getMessage()], 500);
-    //     }
-    // }
-
+    
     public function destroy(string $id)
 {
     try {
@@ -1556,126 +1535,7 @@ public function store(Request $request): RedirectResponse
 
     public function list(Request $request)
 {
-    // $query = DB::table('transactions')
-    //     ->leftJoin('contacts', 'transactions.contact_id', '=', 'contacts.id')
-    //     ->leftJoin('sectors', 'contacts.sector_id', '=', 'sectors.id')
-    //     ->leftJoin('products', 'transactions.product_id', '=', 'products.id')
-    //     ->leftJoin('columns', 'transactions.column_id', '=', 'columns.id')
-    //     ->leftJoinSub(function ($query) {
-    //         $query->from('transaction_logs')
-    //             ->select('id', 'transaction_id', 'user_id')
-    //             ->whereIn('id', function ($sub) {
-    //                 $sub->from('transaction_logs as t2')
-    //                     ->selectRaw('MAX(id)')
-    //                     ->groupBy('transaction_id');
-    //             });
-    //     }, 'actual_latest_log', function ($join) {
-    //         $join->on('transactions.id', '=', 'actual_latest_log.transaction_id');
-    //     })
-    //     ->leftJoin('users', 'actual_latest_log.user_id', '=', 'users.id')
-    //     ->select(
-    //         'transactions.id as id',
-    //         'transactions.trx',
-    //         'transactions.current_price',
-    //         'transactions.qty',
-    //         'transactions.discount_amount',
-    //         'transactions.grand_total',
-    //         'transactions.deadline',
-    //         'transactions.notes',
-    //         'transactions.created_at',
-    //         'transactions.updated_at',
-    //         'transactions.column_id as trx_column_id',
-    //         'contacts.id as contact_id',
-    //         'contacts.name as contact_name',
-    //         'contacts.company_name',
-    //         'contacts.email as contact_email',
-    //         'contacts.phone as contact_phone',
-    //         'contacts.social_media as contact_social',
-    //         'contacts.address as contact_address',
-    //         'sectors.name as sector_name',
-    //         'sectors.bg_color as sector_color',
-    //         'products.id as product_id',
-    //         'products.name as product_name',
-    //         'columns.id as column_id',
-    //         'columns.name as column_name',
-    //         'users.name as last_user_name'
-    //     )
-    //     ->whereNull('transactions.deleted_at');
-
-    // // ✅ Filter arsip langsung berdasarkan kolom
-    // if ($request->query('show') === 'arsip') {
-    //     $query->whereIn('columns.name', ['DEALING', 'JUNK']);
-    // } else {
-    //     $query->whereNotIn('columns.name', ['DEALING', 'JUNK']);
-    // }
-
-    // $transactions = $query->get()->map(function ($transaction) {
-    //     $deadlineDate = $transaction->deadline
-    //         ? Carbon::parse($transaction->deadline)->format('Y-m-d')
-    //         : null;
-
-    //     $lastUserInitials = '??';
-    //     $lastUserBgColor = 'bg-gray-400';
-
-    //     if (!empty($transaction->last_user_name)) {
-    //         $words = preg_split('/\s+/', trim($transaction->last_user_name));
-    //         $lastUserInitials = count($words) >= 2
-    //             ? strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1))
-    //             : strtoupper(substr($words[0], 0, 2));
-    //         $lastUserBgColor = 'bg-fuchsia-500';
-    //     }
-
-    //     return [
-    //         'id' => $transaction->id,
-    //         'trx' => $transaction->trx,
-    //         'sector' => $transaction->sector_name ?? 'Unknown',
-    //         'sectorColor' => $transaction->sector_color ?? 'bg-gray-400',
-    //         'name' => $transaction->contact_name ?? 'N/A',
-    //         'company_name' => $transaction->company_name,
-    //         'email' => $transaction->contact_email ?? '-',
-    //         'phone' => $transaction->contact_phone ?? '-',
-    //         'social_media' => json_decode($transaction->contact_social ?? '[]'),
-    //         'address' => json_decode($transaction->contact_address ?? '[]'),
-    //         'product' => $transaction->product_name ?? 'N/A',
-    //         'deadline' => $deadlineDate,
-    //         'assigneeInitials' => $lastUserInitials,
-    //         'assigneeBgColor' => $lastUserBgColor,
-    //         'columnId' => $transaction->column_id ?? $transaction->trx_column_id ?? 'unknown',
-    //         'current_price' => (float) $transaction->current_price,
-    //         'qty' => (int) $transaction->qty,
-    //         'discount_amount' => (float) $transaction->discount_amount,
-    //         'grand_total' => (float) $transaction->grand_total,
-    //         'notes' => $transaction->notes,
-    //         'created_at' => $transaction->created_at,
-    //         'updated_at' => $transaction->updated_at,
-    //         'contact_id' => $transaction->contact_id,
-    //         'product_id' => $transaction->product_id,
-    //         'lastUserInitials' => $lastUserInitials,
-    //         'lastUserBgColor' => $lastUserBgColor,
-    //     ];
-    // });
-
-    // $columns = Column::all();
-
-    // $kanbanData = $columns->map(function ($column) use ($transactions) {
-    //     return [
-    //         'id' => $column->id,
-    //         'title' => $column->name,
-    //         'bgColor' => $column->bg_color,
-    //         'borderColor' => $column->border_color,
-    //         'titleColor' => $column->title_color,
-    //         'dotBorderColor' => $column->dot_border_color,
-    //         'dotBgColor' => $column->dot_bg_color,
-    //         'dotTextColor' => $column->dot_text_color,
-    //         'addLeadColor' => $column->add_lead_color,
-    //         'leads' => $transactions->where('columnId', $column->id)->values(),
-    //     ];
-    // });
-
-    // return Inertia::render('Kanban/list', [
-    //     'kanbanData' => $kanbanData,
-    //     'columns' => $columns->map(fn($column) => ['id' => $column->id, 'title' => $column->name]),
-    // ]);
+    
 
     $query = DB::table('transactions')
         ->leftJoin('contacts', 'transactions.contact_id', '=', 'contacts.id')
@@ -1722,6 +1582,7 @@ public function store(Request $request): RedirectResponse
             'users.name as last_user_name'
         )
         ->whereNull('transactions.deleted_at');
+        // dd($query);
 
     // Filter arsip DEALING/JUNK berdasarkan parameter filter
     if ($request->query('show') === 'arsip') {
@@ -1735,8 +1596,8 @@ public function store(Request $request): RedirectResponse
         $query->where(function ($q) {
             $q->whereNotIn('columns.name', ['DEALING', 'JUNK'])
               ->orWhere(function ($subQ) {
-                  $subQ->whereIn('columns.name', ['DEALING', 'JUNK'])
-                       ->where('transactions.updated_at', '>=', now()->subDays(7));
+                  $subQ->whereIn('columns.name', ['DEALING', 'JUNK']);
+                    //    ->where('transactions.updated_at', '>=', now()->subDays(7));
               });
         });
     }
