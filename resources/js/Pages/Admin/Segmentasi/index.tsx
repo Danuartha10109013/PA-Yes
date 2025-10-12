@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { usePage, Head, router } from '@inertiajs/react';
-import MySidebar from '../../../Layout/SidebarAdmin';
-import ReportControls from '../../../Layout/Navbar/NavbarSegmenAdmin';
-import { Breadcrumbs } from '../../../components/breadcrumbs';
+import { Breadcrumbs } from '@/components/breadcrumbs';
+import { Head, router, usePage } from '@inertiajs/react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
+import ReportControls from '../../../Layout/Navbar/NavbarSegmenAdmin';
+import MySidebar from '../../../Layout/SidebarAdmin';
 
 interface SegmentasiPasar {
     id: string;
@@ -56,9 +56,9 @@ const SegmentasiPasarTableRow: React.FC<{ segmentasiPasar: SegmentasiPasar }> = 
     };
 
     return (
-        <tr className="bg-white hover:bg-gray-50 transition-colors duration-200 border-b border-gray-200">
-            <td className="pl-6 py-4">
-                <div className="font-semibold text-[#344767] text-sm">{segmentasiPasar.sector_name || 'N/A'}</div>
+        <tr className="border-b border-gray-200 bg-white transition-colors duration-200 hover:bg-gray-50">
+            <td className="py-4 pl-6">
+                <div className="text-sm font-semibold text-[#344767]">{segmentasiPasar.sector_name || 'N/A'}</div>
             </td>
             <td className="py-4">
                 <div className="text-sm font-semibold">{segmentasiPasar.jumlah_item}</div>
@@ -79,7 +79,7 @@ const SegmentasiPasarTableRow: React.FC<{ segmentasiPasar: SegmentasiPasar }> = 
                 <div className="text-sm font-semibold">{segmentasiPasar.kriteria_total_transaksi}</div>
             </td>
             <td className="py-4">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColorClass}`}>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColorClass}`}>
                     {segmentasiPasar.status}
                 </span>
             </td>
@@ -94,11 +94,11 @@ const SegmentasiPasarTableRow: React.FC<{ segmentasiPasar: SegmentasiPasar }> = 
 };
 
 const SegmentasiPasarList: React.FC<Props> = () => {
-    const { props } = usePage();
+    const { props, url } = usePage();
 
     const segmentasiData = (props as any)?.segmentasi ?? [];
     const averagesData = (props as any)?.averages ?? null;
-    const show = (props as any)?.show ?? 'aktif';
+    const mode = (props as any)?.mode ?? 'current';
 
     const [segmentasiPasar, setSegmentasiPasar] = useState<SegmentasiPasar[]>(segmentasiData);
     const [averages, setAverages] = useState(averagesData);
@@ -109,7 +109,65 @@ const SegmentasiPasarList: React.FC<Props> = () => {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
 
-    const itemsPerPage = 10;
+    // Fallback averages computed from current data when backend averages are missing
+    const computedAverages = useMemo(() => {
+        if (!segmentasiPasar || segmentasiPasar.length === 0) {
+            return {
+                avg_jumlah_item: 0,
+                avg_total_penjualan: 0,
+                avg_total_transaksi: 0,
+            };
+        }
+        const count = segmentasiPasar.length;
+        const sumJumlahItem = segmentasiPasar.reduce((sum, item) => sum + (Number(item.jumlah_item) || 0), 0);
+        const sumTotalPenjualan = segmentasiPasar.reduce((sum, item) => sum + (Number(item.total_penjualan) || 0), 0);
+        const sumTotalTransaksi = segmentasiPasar.reduce((sum, item) => sum + (Number(item.total_transaksi) || 0), 0);
+        return {
+            avg_jumlah_item: sumJumlahItem / count,
+            avg_total_penjualan: sumTotalPenjualan / count,
+            avg_total_transaksi: sumTotalTransaksi / count,
+        };
+    }, [segmentasiPasar]);
+
+    const effectiveAverages = useMemo(() => {
+        const hasBackendAverages =
+            averages &&
+            (typeof averages.avg_jumlah_item !== 'undefined' ||
+                typeof averages.avg_total_penjualan !== 'undefined' ||
+                typeof averages.avg_total_transaksi !== 'undefined');
+        return hasBackendAverages ? averages : computedAverages;
+    }, [averages, computedAverages]);
+
+    // Totals based on currently filtered data (to match visible list)
+    // Note: defined after filteredData below; wrap in function and compute later
+    const getTotals = (rows: SegmentasiPasar[]) => {
+        const sumJumlahItem = rows.reduce((sum, item) => sum + (Number(item.jumlah_item) || 0), 0);
+        const sumTotalPenjualan = rows.reduce((sum, item) => sum + (Number(item.total_penjualan) || 0), 0);
+        const sumTotalTransaksi = rows.reduce((sum, item) => sum + (Number(item.total_transaksi) || 0), 0);
+        return {
+            jumlah_item: sumJumlahItem,
+            total_penjualan: sumTotalPenjualan,
+            total_transaksi: sumTotalTransaksi,
+        };
+    };
+
+    // Averages helper based on a given set of rows (respects current filters)
+    const getAveragesFromRows = (rows: SegmentasiPasar[]) => {
+        const count = rows.length || 0;
+        if (count === 0) {
+            return {
+                avg_jumlah_item: 0,
+                avg_total_penjualan: 0,
+                avg_total_transaksi: 0,
+            };
+        }
+        const totals = getTotals(rows);
+        return {
+            avg_jumlah_item: totals.jumlah_item / count,
+            avg_total_penjualan: totals.total_penjualan / count,
+            avg_total_transaksi: totals.total_transaksi / count,
+        };
+    };
 
     // Auto-refresh data setiap 30 detik
     useEffect(() => {
@@ -154,34 +212,51 @@ const SegmentasiPasarList: React.FC<Props> = () => {
         setLastUpdate(new Date());
     }, [segmentasiData, averagesData]);
 
+    // Fungsi untuk refresh data
     const refreshData = () => {
         setIsRefreshing(true);
-        router.reload({ only: ['segmentasi', 'averages'] });
-        
-        // Set timeout untuk reset refreshing state
-        setTimeout(() => {
-            setIsRefreshing(false);
-            setLastUpdate(new Date());
-            Swal.fire({
-                icon: 'success',
-                title: 'Data berhasil diperbarui!',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1500
-            });
-        }, 1000);
+        router.reload({
+            only: ['segmentasi', 'averages'],
+            onSuccess: () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Data berhasil diperbarui!',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end',
+                });
+            },
+            onFinish: () => {
+                setIsRefreshing(false);
+                setLastUpdate(new Date());
+            },
+        });
     };
+
+    const itemsPerPage = 10;
 
     const safeLower = (val: string | null | undefined) => (val ?? '').toLowerCase();
 
-    const filteredData = segmentasiPasar.filter(item =>
-        safeLower(item.sector_name).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.kriteria_jumlah_item).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.kriteria_total_penjualan).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.kriteria_total_transaksi).includes(searchQuery.toLowerCase()) ||
-        safeLower(item.status).includes(searchQuery.toLowerCase())
-    );
+    const filteredData = segmentasiPasar
+        .filter((item) => {
+            // Exclude rows if a column field exists and is JUNK or DEALING
+            const anyItem = item as any;
+            const rawColumn = anyItem?.column ?? anyItem?.column_name ?? anyItem?.columnName ?? anyItem?.status_column ?? '';
+            const colUpper = String(rawColumn).trim().toUpperCase();
+            if (colUpper === 'JUNK' || colUpper === 'DEALING') {
+                return false;
+            }
+            return true;
+        })
+        .filter(
+            (item) =>
+                safeLower(item.sector_name).includes(searchQuery.toLowerCase()) ||
+                safeLower(item.kriteria_jumlah_item).includes(searchQuery.toLowerCase()) ||
+                safeLower(item.kriteria_total_penjualan).includes(searchQuery.toLowerCase()) ||
+                safeLower(item.kriteria_total_transaksi).includes(searchQuery.toLowerCase()) ||
+                safeLower(item.status).includes(searchQuery.toLowerCase()),
+        );
 
     const sortedData = [...filteredData].sort((a, b) => {
         if (!sortColumn) return 0;
@@ -215,7 +290,11 @@ const SegmentasiPasarList: React.FC<Props> = () => {
 
     const renderSortIcon = (column: keyof SegmentasiPasar) => {
         if (sortColumn === column) {
-            return sortDirection === 'asc' ? <i className="fas fa-arrow-up ml-2 text-blue-500"></i> : <i className="fas fa-arrow-down ml-2 text-blue-500"></i>;
+            return sortDirection === 'asc' ? (
+                <i className="fas fa-arrow-up ml-2 text-blue-500"></i>
+            ) : (
+                <i className="fas fa-arrow-down ml-2 text-blue-500"></i>
+            );
         }
         return null;
     };
@@ -237,231 +316,307 @@ const SegmentasiPasarList: React.FC<Props> = () => {
 
     return (
         <>
-            <Head title="Segmentasi Pasar Admin - Tappp" />
+            <Head title="Segmentasi Pasar - Tappp" />
             <div className="flex min-h-screen">
                 <MySidebar />
-                <main className="flex-1 p-4 md:p-6 overflow-hidden">
-                <div className="max-w-7xl mx-auto">
-                    {/* Header */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <div className="flex flex-col">
-                            <h2 className="text-[#344767] font-semibold text-xl md:text-2xl">
-                                Daftar Segmentasi Pasar
-                            </h2>
-                            <div className="mt-1">
-                                <Breadcrumbs
-                                    breadcrumbs={[
-                                        { title: 'Dashboard', href: '/dashboard' },
-                                        { title: 'Segmentasi Pasar', href: '/admin/segmentasi' },
-                                    ]}
+                <main className="flex-1 overflow-hidden p-4 md:p-6">
+                    <div className="mx-auto max-w-7xl">
+                        {/* Header */}
+                        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                            <div className="flex flex-col">
+                                <h2 className="text-xl font-semibold text-[#344767] md:text-2xl">Daftar Segmentasi Pasar</h2>
+                                <div className="mt-1">
+                                    <Breadcrumbs
+                                        breadcrumbs={[
+                                            { title: 'Dashboard', href: '/dashboard' },
+                                            { title: 'Segmentasi Pasar', href: '/admin/SegmentasiPasar' },
+                                            ...(mode === 'arsip' || url.includes('show=arsip')
+                                                ? [{ title: 'Arsip', href: '/admin/SegmentasiPasar?show=arsip' }]
+                                                : []),
+                                        ]}
+                                    />
+                                </div>
+                                <div className="mt-1 flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Terakhir diperbarui: {lastUpdate.toLocaleTimeString('id-ID')}</span>
+                                    {isRefreshing && (
+                                        <span className="flex items-center gap-1 text-xs text-blue-500">
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                            Memperbarui...
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {/* {(mode === 'arsip' || url.includes('show=arsip')) && (
+                                <button
+                                    onClick={() => {
+                                        const pathname = window.location.pathname;
+                                        router.get(pathname, {}, { replace: true, preserveScroll: true });
+                                        setCurrentPage(1);
+                                        setSearchQuery('');
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 bg-white text-gray-700 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    <i className="fas fa-times"></i>
+                                    Tutup Arsip
+                                </button>
+                            )} */}
+                                {/* Manual Refresh Button */}
+                                <button
+                                    onClick={refreshData}
+                                    disabled={isRefreshing}
+                                    className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <i className={`fas ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
+                                    {isRefreshing ? 'Memperbarui...' : 'Refresh'}
+                                </button>
+                                <ReportControls
+                                    searchQuery={searchQuery}
+                                    onSearchChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    onPrintPdf={() => window.open('/segmentasi/export-pdf', '_blank')}
+                                    onPrintExcel={() => window.open('/segmentasi/export-excel', '_blank')}
                                 />
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-gray-500">
-                                    Terakhir diperbarui: {lastUpdate.toLocaleTimeString('id-ID')}
-                                </span>
-                                {isRefreshing && (
-                                    <span className="text-xs text-blue-500 flex items-center gap-1">
-                                        <i className="fas fa-spinner fa-spin"></i>
-                                        Memperbarui...
-                                    </span>
-                                )}
-                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            {/* Manual Refresh Button */}
-                            <button
-                                onClick={refreshData}
-                                disabled={isRefreshing}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                                <i className={`fas ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
-                                {isRefreshing ? 'Memperbarui...' : 'Refresh'}
-                            </button>
-                            <ReportControls
-                                searchQuery={searchQuery}
-                                onSearchChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                onPrintPdf={() => window.open('/segmentasi/export-pdf', '_blank')}
-                                onPrintExcel={() => window.open('/segmentasi/export-excel', '_blank')}
-                            />
-                        </div>
-                    </div>
 
-                    {/* Content */}
-                    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                        {sortedData.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <p className="text-gray-500">Belum ada data segmentasi pasar yang ditemukan.</p>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Desktop Table View */}
-                                <div className="hidden lg:block">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full border-separate border-spacing-y-2">
-                                            <thead>
-                                                <tr className="text-xs font-semibold text-[#98A2B3] uppercase">
-                                                    {['sector_name', 'jumlah_item', 'total_penjualan', 'total_transaksi', 'kriteria_jumlah_item', 'kriteria_total_penjualan', 'kriteria_total_transaksi', 'status', 'created_at', 'month'].map(col => (
-                                                        <th
-                                                            key={col}
-                                                            className="text-left py-3 px-4 cursor-pointer hover:text-blue-500 transition-colors"
-                                                            onClick={() => {
-                                                                setSortColumn(col as keyof SegmentasiPasar);
-                                                                setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-                                                            }}
-                                                        >
-                                                            {col.replace(/_/g, ' ').toUpperCase()} {renderSortIcon(col as keyof SegmentasiPasar)}
-                                                        </th>
+                        {/* Content */}
+                        <div className="overflow-hidden rounded-xl bg-white shadow-md">
+                            {sortedData.length === 0 ? (
+                                <div className="p-8 text-center">
+                                    <p className="text-gray-500">Belum ada data segmentasi pasar yang ditemukan.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Desktop Table View */}
+                                    <div className="hidden lg:block">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full border-separate border-spacing-y-2">
+                                                <thead>
+                                                    <tr className="text-xs font-semibold uppercase text-[#98A2B3]">
+                                                        {[
+                                                            'sector_name',
+                                                            'jumlah_item',
+                                                            'total_penjualan',
+                                                            'total_transaksi',
+                                                            'kriteria_jumlah_item',
+                                                            'kriteria_total_penjualan',
+                                                            'kriteria_total_transaksi',
+                                                            'status',
+                                                            'created_at',
+                                                            'month',
+                                                        ].map((col) => (
+                                                            <th
+                                                                key={col}
+                                                                className="cursor-pointer px-4 py-3 text-left transition-colors hover:text-blue-500"
+                                                                onClick={() => {
+                                                                    setSortColumn(col as keyof SegmentasiPasar);
+                                                                    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+                                                                }}
+                                                            >
+                                                                {col.replace(/_/g, ' ').toUpperCase()} {renderSortIcon(col as keyof SegmentasiPasar)}
+                                                            </th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="text-sm text-[#344767]">
+                                                    {paginatedData.map((item) => (
+                                                        <SegmentasiPasarTableRow key={item.id} segmentasiPasar={item} />
                                                     ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody className="text-sm text-[#344767]">
-                                                {paginatedData.map((item) => (
-                                                    <SegmentasiPasarTableRow key={item.id} segmentasiPasar={item} />
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* Mobile Card View */}
+                                    <div className="lg:hidden">
+                                        <div className="space-y-4 p-4">
+                                            {paginatedData.map((item) => (
+                                                <div key={item.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                                    <div className="mb-3 flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                            <h3 className="text-lg font-semibold text-[#344767]">{item.sector_name || 'N/A'}</h3>
+                                                            <p className="text-sm text-gray-600">Bulan: {item.month}</p>
+                                                        </div>
+                                                        <span
+                                                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColorClass(item.status)}`}
+                                                        >
+                                                            {item.status}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="mb-4 grid grid-cols-2 gap-4 text-sm">
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">Jumlah Item:</p>
+                                                            <p className="font-semibold">{item.jumlah_item}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">Total Transaksi:</p>
+                                                            <p className="font-semibold">
+                                                                {parseToNumber(item.total_transaksi).toLocaleString('id-ID')}
+                                                            </p>
+                                                        </div>
+                                                        <div className="col-span-2">
+                                                            <p className="font-medium text-gray-700">Total Penjualan:</p>
+                                                            <p className="font-semibold">
+                                                                Rp{parseToNumber(item.total_penjualan).toLocaleString('id-ID')}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mb-4 grid grid-cols-3 gap-2 text-xs text-gray-500">
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">K-Jumlah:</p>
+                                                            <p>{item.kriteria_jumlah_item}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">K-Penjualan:</p>
+                                                            <p>{item.kriteria_total_penjualan}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-700">K-Transaksi:</p>
+                                                            <p>{item.kriteria_total_transaksi}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-xs text-gray-500">
+                                                        <p>Dibuat: {formatDate(item.created_at)}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Averages Section */}
+                        {mode !== 'arsip' && (
+                            <div className="mt-6 rounded-xl bg-white p-6 shadow-md">
+                                <h3 className="mb-4 text-lg font-semibold text-gray-800">Total Bulan Ini:</h3>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div className="rounded-lg bg-blue-50 p-4">
+                                        <p className="text-sm font-medium text-blue-700">Jumlah Item</p>
+                                        <p className="text-2xl font-bold text-blue-800">
+                                            {Number(getTotals(filteredData).jumlah_item ?? 0).toLocaleString('id-ID', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            })}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg bg-green-50 p-4">
+                                        <p className="text-sm font-medium text-green-700">Total Penjualan</p>
+                                        <p className="text-2xl font-bold text-green-800">
+                                            Rp{Number(getTotals(filteredData).total_penjualan).toLocaleString('id-ID')}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg bg-purple-50 p-4">
+                                        <p className="text-sm font-medium text-purple-700">Total Transaksi</p>
+                                        <p className="text-2xl font-bold text-purple-800">
+                                            {Number(getTotals(filteredData).total_transaksi ?? 0).toLocaleString('id-ID', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            })}
+                                        </p>
                                     </div>
                                 </div>
+                                {/* Filter-aware averages */}
+                                <div className="mt-6">
+                                    <h4 className="mb-4 text-lg font-semibold text-gray-800">Rata-rata Bulan Ini:</h4>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                        <div className="rounded-lg bg-blue-50 p-4">
+                                            <p className="text-sm font-medium text-blue-700">Jumlah Item</p>
+                                            <p className="text-2xl font-bold text-blue-800">
+                                                {Number(getAveragesFromRows(filteredData).avg_jumlah_item ?? 0).toLocaleString('id-ID', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg bg-green-50 p-4">
+                                            <p className="text-sm font-medium text-green-700">Total Penjualan</p>
+                                            <p className="text-2xl font-bold text-green-800">
+                                                Rp{Number(getAveragesFromRows(filteredData).avg_total_penjualan).toLocaleString('id-ID')}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg bg-purple-50 p-4">
+                                            <p className="text-sm font-medium text-purple-700">Total Transaksi</p>
+                                            <p className="text-2xl font-bold text-purple-800">
+                                                {Number(getAveragesFromRows(filteredData).avg_total_transaksi ?? 0).toLocaleString('id-ID', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                                {/* Mobile Card View */}
-                                <div className="lg:hidden">
-                                    <div className="p-4 space-y-4">
-                                        {paginatedData.map((item) => (
-                                            <div key={item.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <div className="flex-1">
-                                                        <h3 className="font-semibold text-[#344767] text-lg">{item.sector_name || 'N/A'}</h3>
-                                                        <p className="text-gray-600 text-sm">Bulan: {item.month}</p>
-                                                    </div>
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColorClass(item.status)}`}>
-                                                        {item.status}
+                        {/* Pagination Controls */}
+                        {sortedData.length > itemsPerPage && (
+                            <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="rounded-lg bg-white px-3 py-2 text-sm text-gray-700 shadow-md transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Sebelumnya
+                                    </button>
+
+                                    <div className="flex items-center space-x-1">
+                                        {[...Array(totalPages)].map((_, index) => {
+                                            const pageNumber = index + 1;
+                                            if (
+                                                pageNumber === 1 ||
+                                                pageNumber === totalPages ||
+                                                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={pageNumber}
+                                                        onClick={() => setCurrentPage(pageNumber)}
+                                                        className={`rounded-lg px-3 py-2 text-sm shadow-md transition-colors ${
+                                                            currentPage === pageNumber
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'bg-white text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                    >
+                                                        {pageNumber}
+                                                    </button>
+                                                );
+                                            } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+                                                return (
+                                                    <span key={pageNumber} className="px-2 text-gray-500">
+                                                        ...
                                                     </span>
-                                                </div>
-                                                
-                                                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">Jumlah Item:</p>
-                                                        <p className="font-semibold">{item.jumlah_item}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">Total Transaksi:</p>
-                                                        <p className="font-semibold">{parseToNumber(item.total_transaksi).toLocaleString('id-ID')}</p>
-                                                    </div>
-                                                    <div className="col-span-2">
-                                                        <p className="font-medium text-gray-700">Total Penjualan:</p>
-                                                        <p className="font-semibold">Rp{parseToNumber(item.total_penjualan).toLocaleString('id-ID')}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-3 gap-2 text-xs text-gray-500 mb-4">
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">K-Jumlah:</p>
-                                                        <p>{item.kriteria_jumlah_item}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">K-Penjualan:</p>
-                                                        <p>{item.kriteria_total_penjualan}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-700">K-Transaksi:</p>
-                                                        <p>{item.kriteria_total_transaksi}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="text-xs text-gray-500">
-                                                    <p>Dibuat: {formatDate(item.created_at)}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                );
+                                            }
+                                            return null;
+                                        })}
                                     </div>
+
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="rounded-lg bg-white px-3 py-2 text-sm text-gray-700 shadow-md transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Berikutnya
+                                    </button>
                                 </div>
-                            </>
+
+                                <div className="text-sm text-gray-600">
+                                    Halaman {currentPage} dari {totalPages} ({paginatedData.length} total data)
+                                </div>
+                            </div>
                         )}
                     </div>
-
-                    {/* Averages Section */}
-                    {show !== 'arsip' && averages && (
-                        <div className="mt-6 bg-white rounded-xl shadow-md p-6">
-                            <h3 className="font-semibold text-gray-800 mb-4 text-lg">Rata-rata Bulan Ini:</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-blue-50 rounded-lg p-4">
-                                    <p className="text-sm font-medium text-blue-700">Jumlah Item</p>
-                                    <p className="text-2xl font-bold text-blue-800">{Math.round(averages.avg_jumlah_item ?? 0)}</p>
-                                </div>
-                                <div className="bg-green-50 rounded-lg p-4">
-                                    <p className="text-sm font-medium text-green-700">Total Penjualan</p>
-                                    <p className="text-2xl font-bold text-green-800">Rp{(averages.avg_total_penjualan ?? 0).toLocaleString('id-ID')}</p>
-                                </div>
-                                <div className="bg-purple-50 rounded-lg p-4">
-                                    <p className="text-sm font-medium text-purple-700">Total Transaksi</p>
-                                    <p className="text-2xl font-bold text-purple-800">{Math.round(averages.avg_total_transaksi ?? 0)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Pagination Controls */}
-                    {sortedData.length > itemsPerPage && (
-                        <div className="flex flex-col sm:flex-row justify-center items-center mt-6 gap-4">
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                                >
-                                    Sebelumnya
-                                </button>
-                                
-                                <div className="flex items-center space-x-1">
-                                    {[...Array(totalPages)].map((_, index) => {
-                                        const pageNumber = index + 1;
-                                        if (
-                                            pageNumber === 1 ||
-                                            pageNumber === totalPages ||
-                                            (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                                        ) {
-                                            return (
-                                                <button
-                                                    key={pageNumber}
-                                                    onClick={() => setCurrentPage(pageNumber)}
-                                                    className={`px-3 py-2 rounded-lg shadow-md transition-colors text-sm ${
-                                                        currentPage === pageNumber
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-white text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                                >
-                                                    {pageNumber}
-                                                </button>
-                                            );
-                                        } else if (
-                                            pageNumber === currentPage - 2 ||
-                                            pageNumber === currentPage + 2
-                                        ) {
-                                            return <span key={pageNumber} className="px-2 text-gray-500">...</span>;
-                                        }
-                                        return null;
-                                    })}
-                                </div>
-                                
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                                >
-                                    Berikutnya
-                                </button>
-                            </div>
-                            
-                            <div className="text-sm text-gray-600">
-                                Halaman {currentPage} dari {totalPages} ({sortedData.length} total data)
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </main>
-        </div>
-    </>
+                </main>
+            </div>
+        </>
     );
 };
 
